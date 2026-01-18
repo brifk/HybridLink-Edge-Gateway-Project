@@ -1,0 +1,103 @@
+#ifndef BNO055_DRIVER_HPP
+#define BNO055_DRIVER_HPP
+
+#include "driver/i2c_master.h"
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+extern "C" {
+#include "bno055.h"
+}
+
+class Bno055Driver {
+public:
+    // 构造函数
+    Bno055Driver()
+    {
+        bno055.bus_read = bno055read;
+        bno055.bus_write = bno055write;
+        bno055.dev_addr = BNO055_I2C_ADDR1;
+        bno055.delay_msec = delay_func;
+    };
+
+    ~Bno055Driver() { };
+
+    esp_err_t init()
+    {
+        i2c_master_init(&i2c_master_bus_handle, &i2c_master_dev_handle); // 初始化i2c总线，挂载bno055
+        ESP_LOGI("bno055", "i2c master init success");
+        s32 comres = BNO055_ERROR;
+        comres = bno055_init(&bno055); // 初始化bno055
+        bno055_set_operation_mode(BNO055_OPERATION_MODE_NDOF); // 设置操作模式为NDOF，即直接读寄存器就可以得到数值
+        vTaskDelay(pdMS_TO_TICKS(1000)); // 等待稳定
+        if (comres != BNO055_SUCCESS) {
+            ESP_LOGE("bno055", "BNO055 init failed with error: %d", comres);
+            return ESP_FAIL;
+        }
+        ESP_LOGI("bno055", "bno055 init success");
+        return ESP_OK;
+    };
+
+private:
+    struct bno055_t bno055;
+    static i2c_master_dev_handle_t i2c_master_dev_handle;
+    static i2c_master_bus_handle_t i2c_master_bus_handle;
+    static s8 bno055read(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 wr_len)
+    {
+        esp_err_t err = i2c_master_transmit_receive(i2c_master_dev_handle, &reg_addr, 1, reg_data, wr_len, I2C_MASTER_TIMEOUT_MS);
+        if (err != ESP_OK) {
+            ESP_LOGE("bno055", "I2C read failed at register 0x%02X: %s", reg_addr, esp_err_to_name(err));
+            return BNO055_ERROR;
+        }
+        return BNO055_SUCCESS;
+    }
+
+    static s8 bno055write(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 wr_len)
+    {
+        // 创建一个临时缓冲区来存储寄存器地址和数据
+        u8* write_buffer = (u8*)malloc(wr_len + 1);
+        if (write_buffer == NULL) {
+            ESP_LOGE("bno055", "Memory allocation failed");
+            return BNO055_ERROR;
+        }
+
+        write_buffer[0] = reg_addr;
+        memcpy(&write_buffer[1], reg_data, wr_len);
+
+        esp_err_t err = i2c_master_transmit(i2c_master_dev_handle, write_buffer, wr_len + 1, I2C_MASTER_TIMEOUT_MS);
+        free(write_buffer);
+
+        if (err != ESP_OK) {
+            ESP_LOGE("bno055", "I2C write failed at register 0x%02X: %s", reg_addr, esp_err_to_name(err));
+            return BNO055_ERROR;
+        }
+        return BNO055_SUCCESS;
+    }
+
+    static void delay_func(u32 delay_in_msec)
+    {
+        vTaskDelay(pdMS_TO_TICKS(delay_in_msec));
+    }
+
+    static void i2c_master_init(i2c_master_bus_handle_t* bus_handle, i2c_master_dev_handle_t* dev_handle)
+    {
+        // 使用显式的结构体成员赋值方式，而不是大括号初始化
+        i2c_master_bus_config_t bus_config = {};
+        bus_config.i2c_port = I2C_MASTER_NUM;
+        bus_config.sda_io_num = I2C_MASTER_SDA_IO;
+        bus_config.scl_io_num = I2C_MASTER_SCL_IO;
+        bus_config.clk_source = I2C_CLK_SRC_DEFAULT;
+        bus_config.glitch_ignore_cnt = 7;
+        bus_config.flags.enable_internal_pullup = true;
+
+        ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, bus_handle));
+
+        i2c_device_config_t dev_config = {};
+        dev_config.dev_addr_length = I2C_ADDR_BIT_LEN_7;
+        dev_config.device_address = BNO055_I2C_ADDR1;
+        dev_config.scl_speed_hz = I2C_MASTER_FREQ_HZ;
+        ESP_ERROR_CHECK(i2c_master_bus_add_device(*bus_handle, &dev_config, dev_handle));
+    }
+};
+#endif // BNO055_DRIVER_HPP
