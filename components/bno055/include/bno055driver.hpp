@@ -10,6 +10,8 @@ extern "C" {
 #include "bno055.h"
 }
 
+#define TAG "bno055"
+
 class Bno055Driver {
 public:
     // 构造函数
@@ -26,16 +28,16 @@ public:
     esp_err_t init()
     {
         i2c_master_init(&i2c_master_bus_handle, &i2c_master_dev_handle); // 初始化i2c总线，挂载bno055
-        ESP_LOGI("bno055", "i2c master init success");
+        ESP_LOGI(TAG, "i2c master init success");
         s32 comres = BNO055_ERROR;
         comres = bno055_init(&bno055); // 初始化bno055
         bno055_set_operation_mode(BNO055_OPERATION_MODE_NDOF); // 设置操作模式为NDOF，即直接读寄存器就可以得到数值
         vTaskDelay(pdMS_TO_TICKS(1000)); // 等待稳定
         if (comres != BNO055_SUCCESS) {
-            ESP_LOGE("bno055", "BNO055 init failed with error: %d", comres);
+            ESP_LOGE(TAG, "BNO055 init failed with error: %d", comres);
             return ESP_FAIL;
         }
-        ESP_LOGI("bno055", "bno055 init success");
+        ESP_LOGI(TAG, "bno055 init success");
         return ESP_OK;
     };
 
@@ -47,7 +49,7 @@ private:
     {
         esp_err_t err = i2c_master_transmit_receive(i2c_master_dev_handle, &reg_addr, 1, reg_data, wr_len, I2C_MASTER_TIMEOUT_MS);
         if (err != ESP_OK) {
-            ESP_LOGE("bno055", "I2C read failed at register 0x%02X: %s", reg_addr, esp_err_to_name(err));
+            ESP_LOGE(TAG, "I2C read failed at register 0x%02X: %s", reg_addr, esp_err_to_name(err));
             return BNO055_ERROR;
         }
         return BNO055_SUCCESS;
@@ -58,7 +60,7 @@ private:
         // 创建一个临时缓冲区来存储寄存器地址和数据
         u8* write_buffer = (u8*)malloc(wr_len + 1);
         if (write_buffer == NULL) {
-            ESP_LOGE("bno055", "Memory allocation failed");
+            ESP_LOGE(TAG, "Memory allocation failed");
             return BNO055_ERROR;
         }
 
@@ -69,7 +71,7 @@ private:
         free(write_buffer);
 
         if (err != ESP_OK) {
-            ESP_LOGE("bno055", "I2C write failed at register 0x%02X: %s", reg_addr, esp_err_to_name(err));
+            ESP_LOGE(TAG, "I2C write failed at register 0x%02X: %s", reg_addr, esp_err_to_name(err));
             return BNO055_ERROR;
         }
         return BNO055_SUCCESS;

@@ -53,8 +53,6 @@
 #include <stdint.h>
 #endif
 
-#define TAG "bno055"
-
 #ifndef NULL
 #ifdef __cplusplus
 #define NULL 0
@@ -68,116 +66,6 @@
 
 /*  STRUCTURE DEFINITIONS   */
 static struct bno055_t* p_bno055;
-
-/*   LOCAL FUNCTIONS    */
-static i2c_master_dev_handle_t i2c_master_dev_handle;
-static i2c_master_bus_handle_t i2c_master_bus_handle;
-
-QueueHandle_t bno055tQueue = NULL;
-
-// 三个接口函数
-static s8 bno055read(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 wr_len)
-{
-    esp_err_t err = i2c_master_transmit_receive(i2c_master_dev_handle, &reg_addr, 1, reg_data, wr_len, I2C_MASTER_TIMEOUT_MS);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "I2C read failed at register 0x%02X: %s", reg_addr, esp_err_to_name(err));
-        return BNO055_ERROR;
-    }
-    return BNO055_SUCCESS;
-}
-
-static s8 bno055write(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 wr_len)
-{
-    // 创建一个临时缓冲区来存储寄存器地址和数据
-    u8* write_buffer = (u8*)malloc(wr_len + 1);
-    if (write_buffer == NULL) {
-        ESP_LOGE(TAG, "Memory allocation failed");
-        return BNO055_ERROR;
-    }
-
-    write_buffer[0] = reg_addr;
-    memcpy(&write_buffer[1], reg_data, wr_len);
-
-    esp_err_t err = i2c_master_transmit(i2c_master_dev_handle, write_buffer, wr_len + 1, I2C_MASTER_TIMEOUT_MS);
-    free(write_buffer);
-
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "I2C write failed at register 0x%02X: %s", reg_addr, esp_err_to_name(err));
-        return BNO055_ERROR;
-    }
-    return BNO055_SUCCESS;
-}
-
-static void delay_func(u32 delay_in_msec)
-{
-    vTaskDelay(pdMS_TO_TICKS(delay_in_msec));
-}
-
-static void i2c_master_init(i2c_master_bus_handle_t* bus_handle, i2c_master_dev_handle_t* dev_handle)
-{
-    i2c_master_bus_config_t bus_config = {
-        .i2c_port = I2C_MASTER_NUM,
-        .sda_io_num = I2C_MASTER_SDA_IO,
-        .scl_io_num = I2C_MASTER_SCL_IO,
-        .clk_source = I2C_CLK_SRC_DEFAULT,
-        .glitch_ignore_cnt = 7,
-        .flags.enable_internal_pullup = true,
-    };
-    ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, bus_handle));
-
-    i2c_device_config_t dev_config = {
-        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-        .device_address = BNO055_I2C_ADDR1,
-        .scl_speed_hz = I2C_MASTER_FREQ_HZ,
-    };
-    ESP_ERROR_CHECK(i2c_master_bus_add_device(*bus_handle, &dev_config, dev_handle));
-}
-
-s32 bno055_get_all_parameters(struct bno055_data_t* data)
-{
-    s32 comres = BNO055_SUCCESS;
-    comres += bno055_convert_double_accel_xyz_msq(&data->accel);
-    comres += bno055_convert_double_mag_xyz_uT(&data->mag);
-    comres += bno055_convert_double_gyro_xyz_dps(&data->gyro);
-    comres += bno055_convert_double_euler_hpr_deg(&data->euler);
-    comres += bno055_convert_double_linear_accel_xyz_msq(&data->linear_accel);
-    comres += bno055_convert_double_gravity_xyz_msq(&data->gravity);
-    return comres;
-}
-
-void BON055Task(void* pvParameters)
-{
-    i2c_master_init(&i2c_master_bus_handle, &i2c_master_dev_handle); // 初始化i2c总线，挂载bno055
-    ESP_LOGI(TAG, "i2c master init success");
-    static struct bno055_t bno055;
-    bno055.bus_read = bno055read;
-    bno055.bus_write = bno055write;
-    bno055.dev_addr = BNO055_I2C_ADDR1;
-    bno055.delay_msec = delay_func;
-    s32 comres = BNO055_ERROR;
-    comres = bno055_init(&bno055); // 初始化bno055
-    bno055_set_operation_mode(BNO055_OPERATION_MODE_NDOF);  // 设置操作模式为NDOF，即直接读寄存器就可以得到数值
-    vTaskDelay(pdMS_TO_TICKS(1000));    // 等待稳定
-    if (comres != BNO055_SUCCESS) {
-        ESP_LOGE(TAG, "BNO055 init failed with error: %d", comres);
-        vTaskDelete(NULL);
-    }
-    ESP_LOGI(TAG, "bno055 init success");
-    /* structure used to read the linear accel xyz data */
-    static struct bno055_data_t bno055_data;
-    TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(10);
-    while (1) {
-        comres = bno055_get_all_parameters(&bno055_data);
-        if (comres != BNO055_SUCCESS) { 
-            ESP_LOGI("bno055", "comres error: %d", comres);
-            // vTaskDelete(NULL);
-        }
-        xQueueSend(bno055tQueue, &bno055_data, 0);
-        vTaskDelayUntil(&xLastWakeTime, xFrequency);
-    }
-}
-
 /*!
 
  *  @brief
