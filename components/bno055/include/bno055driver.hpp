@@ -41,10 +41,22 @@ public:
         return ESP_OK;
     };
 
+    bno055_euler_double_t read_double_euler() {
+        bno055_convert_double_euler_hpr_deg(&euler);
+        return euler;
+    };
+
+    double read_linear_accel_z() {
+        bno055_convert_double_linear_accel_z_msq(&linear_accel_z);
+        return linear_accel_z;
+    }
+
 private:
     struct bno055_t bno055;
     static i2c_master_dev_handle_t i2c_master_dev_handle;
     static i2c_master_bus_handle_t i2c_master_bus_handle;
+    double linear_accel_z;
+    struct bno055_euler_double_t euler;
     static s8 bno055read(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 wr_len)
     {
         esp_err_t err = i2c_master_transmit_receive(i2c_master_dev_handle, &reg_addr, 1, reg_data, wr_len, I2C_MASTER_TIMEOUT_MS);
@@ -84,7 +96,6 @@ private:
 
     static void i2c_master_init(i2c_master_bus_handle_t* bus_handle, i2c_master_dev_handle_t* dev_handle)
     {
-        // 使用显式的结构体成员赋值方式，而不是大括号初始化
         i2c_master_bus_config_t bus_config = {};
         bus_config.i2c_port = I2C_MASTER_NUM;
         bus_config.sda_io_num = I2C_MASTER_SDA_IO;

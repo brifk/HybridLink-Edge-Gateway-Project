@@ -1,6 +1,4 @@
-extern "C" {
 #include "led.h"
-}
 
 class LED {
 public:
