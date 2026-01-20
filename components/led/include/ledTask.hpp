@@ -13,6 +13,7 @@ public:
     ~LEDTask() { };
     void run() override
     {
+        led->ledc_init();
         led->init();
         led_info_t* led_info = led->get_led_info();
 
@@ -90,7 +91,7 @@ public:
             } else if (led_info->state == LED_STATE_ON) {
                 ledc_set_duty(LEDC_MODE_SEL, led_info->ledc_channel, led_info->max_duty);
                 ledc_update_duty(LEDC_MODE_SEL, led_info->ledc_channel);
-            } else if (led_info->state == LED_STATE_ON) {
+            } else if (led_info->state == LED_STATE_OFF) {
                 ledc_set_duty(LEDC_MODE_SEL, led_info->ledc_channel, 0);
                 ledc_update_duty(LEDC_MODE_SEL, led_info->ledc_channel);
             } else {
