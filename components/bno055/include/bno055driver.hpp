@@ -10,8 +10,6 @@ extern "C" {
 #include "bno055.h"
 }
 
-#define TAG "bno055"
-
 class Bno055Driver {
 public:
     // 构造函数
@@ -52,6 +50,7 @@ public:
     }
 
 private:
+    static constexpr char* TAG = "bno055";
     struct bno055_t bno055;
     static i2c_master_dev_handle_t i2c_master_dev_handle;
     static i2c_master_bus_handle_t i2c_master_bus_handle;
