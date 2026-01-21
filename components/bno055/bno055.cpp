@@ -22,18 +22,36 @@ esp_err_t Bno055Driver::init()
         ESP_LOGE(TAG, "BNO055 init failed with error: %d", comres);
         return ESP_FAIL;
     }
+    bno055_mutex = xSemaphoreCreateMutex();
+    if (bno055_mutex == NULL) {
+        ESP_LOGE(TAG, "Failed to create bno055 mutex");
+        return ESP_FAIL;
+    }
     bno055_initialized = true;
     ESP_LOGI(TAG, "bno055 init success");
     return ESP_OK;
 }
 
+// 由于bno055被两个线程使用，需要加锁读取保证线程安全
 bno055_euler_double_t Bno055Driver::read_double_euler() {
+    if (bno055_mutex == NULL) {
+        ESP_LOGE(TAG, "bno055 mutex is NULL");
+        return euler;
+    }
+    xSemaphoreTake(bno055_mutex, portMAX_DELAY);
     bno055_convert_double_euler_hpr_deg(&euler);
+    xSemaphoreGive(bno055_mutex);
     return euler;
 }
 
 double Bno055Driver::read_linear_accel_z() {
+    if (bno055_mutex == NULL) {
+        ESP_LOGE(TAG, "bno055 mutex is NULL");
+        return linear_accel_z;
+    }
+    xSemaphoreTake(bno055_mutex, portMAX_DELAY);
     bno055_convert_double_linear_accel_z_msq(&linear_accel_z);
+    xSemaphoreGive(bno055_mutex);
     return linear_accel_z;
 }
 

@@ -15,7 +15,7 @@ public:
     led_info_t* get_led_info();
 
 private:
-    static constexpr char* TAG = "LED";
+    static constexpr auto TAG = "LED";
     led_color_t m_led_color;
     std::string led_color_to_string(led_color_t led_color);
     std::string led_state_to_string(led_state_t led_state);

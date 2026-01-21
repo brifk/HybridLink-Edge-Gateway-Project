@@ -16,7 +16,7 @@ public:
     void run() override;
 
 private:
-    static constexpr const char* TAG = "DSPEngine";
+    static constexpr auto TAG = "DSPEngine";
     static constexpr int N = N_SAMPLES;
     
     // 16字节对齐的数组（作为类成员）

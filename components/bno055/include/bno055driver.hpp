@@ -28,7 +28,8 @@ public:
     double read_linear_accel_z() ;
 
 private:
-    static constexpr char* TAG = "bno055";
+    SemaphoreHandle_t bno055_mutex;
+    static constexpr auto TAG = "bno055";
     struct bno055_t bno055;
     static i2c_master_dev_handle_t i2c_master_dev_handle;
     static i2c_master_bus_handle_t i2c_master_bus_handle;

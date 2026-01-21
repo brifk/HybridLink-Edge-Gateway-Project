@@ -21,7 +21,7 @@ public:
         }
     }
 private:
-    static constexpr char* TAG = "Bno055ReadEulerTask";
+    static constexpr auto TAG = "Bno055ReadEulerTask";
     std::shared_ptr<Bno055Driver> bno055;
 };
 
@@ -40,6 +40,6 @@ public:
         }
     }
 private:
-    static constexpr char* TAG = "Bno055ReadLinerAccZTask";
+    static constexpr auto TAG = "Bno055ReadLinerAccZTask";
     std::shared_ptr<Bno055Driver> bno055;
 };
