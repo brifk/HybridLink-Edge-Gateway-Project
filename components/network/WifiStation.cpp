@@ -21,8 +21,8 @@ void WifiStation::init()
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
     // 注册事件处理函数
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, this, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, this, NULL));
     // 设置WiFi模式为station
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     // 启动WiFi
@@ -31,15 +31,20 @@ void WifiStation::init()
 
 void WifiStation::wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
+    WifiStation* wifi_station = (WifiStation*)arg;
+    wifi_station->handle_event(event_base, event_id, event_data);
+}
+
+void WifiStation::handle_event(esp_event_base_t event_base, int32_t event_id, void* event_data)
+{
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        ESP_LOGI(TAG, "WiFi已断开");
         wifi_sta_status = WIFI_DISCONNECTED;
         // TODO: 断开连接后通知MQTTClient任务
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*)event_data;
         ESP_LOGI(TAG, "WiFi已连接，获取到IP地址: " IPSTR, IP2STR(&event->ip_info.ip));
-        // TODO: 连接成功后通知MQTTClient任务
         wifi_sta_status = WIFI_CONNECTED;
+        // TODO: 连接成功后通知MQTTClient任务
     } else {
         ESP_LOGI(TAG, "其他WiFi事件: %d", event_id);
     }

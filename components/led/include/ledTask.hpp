@@ -97,6 +97,7 @@ public:
             } else {
                 break;
             }
+            ESP_LOGI(TAG, "LEDTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
         }
         // 退出任务前，确保 LEDC 输出为 0
         ledc_set_duty(LEDC_MODE_SEL, led_info->ledc_channel, 0);
@@ -107,5 +108,6 @@ public:
     };
 
 private:
+    static constexpr auto TAG = "LEDTask";
     std::unique_ptr<LED> led;
 };

@@ -1,2 +1,4 @@
 .vscode/
 build/
+managed_components/
+main/idf_component.yml

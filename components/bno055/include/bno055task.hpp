@@ -18,6 +18,7 @@ public:
             taskEXIT_CRITICAL(&my_spinlock);
             ESP_LOGI(TAG, "euler: %f, %f, %f", euler.h, euler.r, euler.p);
             vTaskDelay(pdMS_TO_TICKS(500));
+            ESP_LOGI(TAG, "Bno055ReadEulerTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
         }
     }
 private:
@@ -37,6 +38,7 @@ public:
             // taskEXIT_CRITICAL(&my_spinlock);
             ESP_LOGI(TAG, "linear_acc_z: %f", linear_acc_z);
             vTaskDelay(pdMS_TO_TICKS(500));
+            ESP_LOGI(TAG, "Bno055ReadLinerAccZTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
         }
     }
 private:
