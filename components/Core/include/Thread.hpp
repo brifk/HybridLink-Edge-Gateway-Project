@@ -28,6 +28,8 @@ public:
             &m_handle,
             m_coreID);
     }
+    
+    TaskHandle_t getHandle() const { return m_handle; }
 
 protected:
     virtual void run() = 0;

@@ -63,6 +63,7 @@
 
 /*! file <BNO055 >
  * brief <Sensor driver for BNO055> */
+static const char* TAG = "bno055";
 
 /*  STRUCTURE DEFINITIONS   */
 static struct bno055_t* p_bno055;
