@@ -6,7 +6,7 @@ class MQTTTask : public Thread
 {
 public:
     MQTTTask(std::shared_ptr<MQTTClient> mqtt_client) :
-        Thread("MQTTTask", 1024 * 5, 5, 0),
+        Thread("MQTTTask", 1024 * 4, tskIDLE_PRIORITY + 6, 0),
         mqtt_client(std::move(mqtt_client))
     {};
     ~MQTTTask() {};
@@ -15,9 +15,15 @@ public:
         while(1) {
             if (mqtt_client->get_status() == MQTTClient::CONNECTED) {
                 // TODO: 发布MQTT消息
+                ESP_LOGI(TAG, "MQTTTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));  
             }
-            ESP_LOGI(TAG, "MQTTTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
+            vTaskDelay(pdMS_TO_TICKS(1000));
         }
+    };
+    
+    void mqtt_start() {
+        mqtt_client->mqtt_start();
+        ESP_LOGI(TAG, "MQTT客户端已启动");
     };
 private:
     static constexpr auto TAG = "MQTTTask";
@@ -29,7 +35,7 @@ class MQTTNotifyStartTask : public Thread
 {
 public:
     MQTTNotifyStartTask(std::shared_ptr<MQTTClient> mqtt_client) :
-        Thread("MQTTNotifyStartTask", 1024 * 1, 5, 0),
+        Thread("MQTTNotifyStartTask", 1024 * 3, tskIDLE_PRIORITY + 4, 0),
         mqtt_client(std::move(mqtt_client))
     {};
     ~MQTTNotifyStartTask() {};
@@ -47,7 +53,7 @@ class MQTTNotifyStopTask : public Thread
 {
 public:
     MQTTNotifyStopTask(std::shared_ptr<MQTTClient> mqtt_client) :
-        Thread("MQTTNotifyStopTask", 1024 * 1, 5, 0),
+        Thread("MQTTNotifyStopTask", 1024 * 3, tskIDLE_PRIORITY + 4, 0),
         mqtt_client(std::move(mqtt_client))
     {};
     ~MQTTNotifyStopTask() {};

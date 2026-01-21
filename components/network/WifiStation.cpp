@@ -27,6 +27,7 @@ void WifiStation::init()
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     // 启动WiFi
     ESP_ERROR_CHECK(esp_wifi_start());
+    ESP_LOGI(TAG, "WiFi已初始化");
 }
 
 void WifiStation::wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
@@ -45,6 +46,7 @@ void WifiStation::handle_event(esp_event_base_t event_base, int32_t event_id, vo
         ESP_LOGI(TAG, "WiFi已连接，获取到IP地址: " IPSTR, IP2STR(&event->ip_info.ip));
         wifi_sta_status = WIFI_CONNECTED;
         // TODO: 连接成功后通知MQTTClient任务
+        mqtt_task->mqtt_start();
     } else {
         ESP_LOGI(TAG, "其他WiFi事件: %d", event_id);
     }

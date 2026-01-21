@@ -3,6 +3,7 @@
 
 i2c_master_dev_handle_t Bno055Driver::i2c_master_dev_handle = nullptr;
 i2c_master_bus_handle_t Bno055Driver::i2c_master_bus_handle = nullptr;
+SemaphoreHandle_t Bno055Driver::bno055_mutex = xSemaphoreCreateMutex();
 
 esp_err_t Bno055Driver::init()
 {
@@ -38,9 +39,7 @@ bno055_euler_double_t Bno055Driver::read_double_euler() {
         ESP_LOGE(TAG, "bno055 mutex is NULL");
         return euler;
     }
-    xSemaphoreTake(bno055_mutex, portMAX_DELAY);
     bno055_convert_double_euler_hpr_deg(&euler);
-    xSemaphoreGive(bno055_mutex);
     return euler;
 }
 
@@ -49,15 +48,15 @@ double Bno055Driver::read_linear_accel_z() {
         ESP_LOGE(TAG, "bno055 mutex is NULL");
         return linear_accel_z;
     }
-    xSemaphoreTake(bno055_mutex, portMAX_DELAY);
     bno055_convert_double_linear_accel_z_msq(&linear_accel_z);
-    xSemaphoreGive(bno055_mutex);
     return linear_accel_z;
 }
 
 s8 Bno055Driver::bno055read(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 wr_len)
 {
+    xSemaphoreTake(bno055_mutex, portMAX_DELAY);
     esp_err_t err = i2c_master_transmit_receive(i2c_master_dev_handle, &reg_addr, 1, reg_data, wr_len, I2C_MASTER_TIMEOUT_MS);
+    xSemaphoreGive(bno055_mutex);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "I2C read failed at register 0x%02X: %s", reg_addr, esp_err_to_name(err));
         return BNO055_ERROR;
@@ -75,7 +74,9 @@ s8 Bno055Driver::bno055write(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 wr_len)
     }
     write_buffer[0] = reg_addr;
     memcpy(&write_buffer[1], reg_data, wr_len);
+    xSemaphoreTake(bno055_mutex, portMAX_DELAY);
     esp_err_t err = i2c_master_transmit(i2c_master_dev_handle, write_buffer, wr_len + 1, I2C_MASTER_TIMEOUT_MS);
+    xSemaphoreGive(bno055_mutex);
     free(write_buffer);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "I2C write failed at register 0x%02X: %s", reg_addr, esp_err_to_name(err));

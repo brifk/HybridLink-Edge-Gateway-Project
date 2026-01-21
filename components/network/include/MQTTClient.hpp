@@ -18,6 +18,7 @@ public:
     void publish(const char* topic, const char* payload);
     void subscribe(const char* topic);
     void unsubscribe(const char* topic);
+    void mqtt_start();
     void connect();
     void disconnect();
     enum mqtt_status_t {
