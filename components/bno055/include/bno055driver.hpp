@@ -5,6 +5,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 
 extern "C" {
 #include "bno055.h"
@@ -25,10 +26,16 @@ public:
 
     esp_err_t init();
     bno055_euler_double_t read_double_euler();
-    double read_linear_accel_z() ;
+    double read_linear_accel_z();
+    void bno055_euler_queue_push(bno055_euler_double_t euler);
+    QueueHandle_t get_euler_queue_handle() { return bno055_euler_queue; }
+    QueueHandle_t get_linear_accel_z_queue_handle() { return bno055_linear_accel_z_queue; }
+    void bno055_linear_accel_z_queue_push(double linear_accel_z);
 
 private:
-    SemaphoreHandle_t bno055_mutex;
+    QueueHandle_t bno055_euler_queue = xQueueCreate(256, sizeof(bno055_euler_double_t));
+    QueueHandle_t bno055_linear_accel_z_queue = xQueueCreate(256, sizeof(double));
+    static SemaphoreHandle_t bno055_mutex;
     static constexpr auto TAG = "bno055";
     struct bno055_t bno055;
     static i2c_master_dev_handle_t i2c_master_dev_handle;

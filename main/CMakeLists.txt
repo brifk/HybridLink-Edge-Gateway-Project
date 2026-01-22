@@ -7,5 +7,4 @@ set(CURRENT_REQUIRES "bno055"
 
 idf_component_register(SRCS ${CURRENT_SRCS}
                        PRIV_REQUIRES ${CURRENT_REQUIRES}
-                       REQUIRES esp-dsp
                        INCLUDE_DIRS ".")

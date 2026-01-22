@@ -12,7 +12,7 @@ void MQTTClient::log_error_if_nonzero(const char* message, int error_code)
 
 void MQTTClient::init()
 {
-    esp_mqtt_client_config_t mqtt_cfg;
+    esp_mqtt_client_config_t mqtt_cfg = {};
     mqtt_cfg.broker.address.uri = MQTT_BROKER_URL;
 #if CONFIG_BROKER_URL_FROM_STDIN
     char line[128];
@@ -42,7 +42,12 @@ void MQTTClient::init()
     client = esp_mqtt_client_init(&mqtt_cfg);
     /* The last argument may be used to pass data to the event handler, in this example mqtt_event_handler */
     esp_mqtt_client_register_event(client, static_cast<esp_mqtt_event_id_t>(ESP_EVENT_ANY_ID), mqtt_event_handler, NULL);
+}
+
+void MQTTClient::mqtt_start()
+{
     esp_mqtt_client_start(client);
+    ESP_LOGI(TAG, "MQTT客户端已启动");
 }
 
 void MQTTClient::mqtt_event_handler(void* handler_args, esp_event_base_t base, int32_t event_id, void* event_data)
@@ -88,6 +93,8 @@ void MQTTClient::unsubscribe(const char* topic)
 
 void MQTTClient::connect()
 {
+    if(!get_connected())
+        return;
     esp_mqtt_client_reconnect(client);
 }
 
