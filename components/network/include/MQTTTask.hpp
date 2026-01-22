@@ -16,13 +16,15 @@ public:
         while (1) {
             if (mqtt_client->get_status() == MQTTClient::CONNECTED) {
                 bno055_euler_double_t euler;
-                if(xQueueReceive(bno055->get_euler_queue_handle(), &euler, 0)) {    // 非阻塞式接收
+                if (xQueueReceive(bno055->get_euler_queue_handle(), &euler, portMAX_DELAY)) {
                     // TODO: 后面改成json格式
                     char euler_str[128];
                     snprintf(euler_str, sizeof(euler_str), "{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f}", euler.r, euler.p, euler.h);
                     mqtt_client->publish("bno055/euler", euler_str);
                 }
                 ESP_LOGI(TAG, "MQTTTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
+            } else {
+                vTaskDelay(pdMS_TO_TICKS(10));  //未连接的时候不能一直占着cpu
             }
         }
     };
@@ -32,7 +34,6 @@ public:
         if (!mqtt_client->get_connected()) { // 未连接时才启动
             mqtt_client->mqtt_start();
             mqtt_client->set_connected(true);
-            ESP_LOGI(TAG, "MQTT客户端已启动");
         }
     };
 

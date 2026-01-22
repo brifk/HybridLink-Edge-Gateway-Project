@@ -28,7 +28,7 @@ void DSPEngine::processAndShow(float* data, int length)
     // 4. 显示功率谱
     if (length >= 512) {
         ESP_LOGI(TAG, "FFT Result (0Hz - %dHz):", 100 / 2); // 假设100Hz采样
-        dsps_view(data, length / 2, 64, 10, -60, 40, '|');
+        dsps_view(data, length / 2, 128, 20, -60, 40, '|');
     }
 }
 

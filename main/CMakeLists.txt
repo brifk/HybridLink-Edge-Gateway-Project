@@ -3,7 +3,9 @@ set(CURRENT_REQUIRES "bno055"
                      "led"
                      "Core"
                      "network"
-                     "calculate")
+                     "calculate"
+                    #  "OTAServer"
+                    )
 
 idf_component_register(SRCS ${CURRENT_SRCS}
                        PRIV_REQUIRES ${CURRENT_REQUIRES}

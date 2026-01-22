@@ -35,5 +35,6 @@ private:
     bool fft_initialized_ = false;
     
     // FFT 处理并显示频谱
+    // TODO: 后面再实现对频谱的分析
     void processAndShow(float* data, int length);
 };
