@@ -5,7 +5,7 @@
 class WifiTask : public Thread {
 public:
     WifiTask(std::unique_ptr<WifiStation> wifi_station)
-        : Thread("WifiTask", 1024 * 10, tskIDLE_PRIORITY + 7, 0)
+        : Thread("WifiTask", 1024 * 10, PRIO_WIFI, 0)
         , wifi_station(std::move(wifi_station)) { };
     ~WifiTask() { };
     void run() override

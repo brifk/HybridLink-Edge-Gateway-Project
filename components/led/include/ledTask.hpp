@@ -8,7 +8,7 @@
 class LEDTask : public Thread {
 public:
     LEDTask(std::vector<std::shared_ptr<LED>> led_list)
-        : Thread("LEDTask", 1024 * 3, tskIDLE_PRIORITY + 3, 1)
+        : Thread("LEDTask", 1024 * 3, PRIO_LED, 1)
         , led_list(std::move(led_list)) { };
     ~LEDTask() { };
     void run() override

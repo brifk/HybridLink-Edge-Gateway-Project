@@ -93,6 +93,8 @@ void MQTTClient::unsubscribe(const char* topic)
 
 void MQTTClient::connect()
 {
+    if(!get_connected())
+        return;
     esp_mqtt_client_reconnect(client);
 }
 

@@ -107,3 +107,7 @@ void Bno055Driver::i2c_master_init(i2c_master_bus_handle_t* bus_handle, i2c_mast
     ESP_ERROR_CHECK(i2c_master_bus_add_device(*bus_handle, &dev_config, dev_handle));
 }
 
+void Bno055Driver::bno055_euler_queue_push(bno055_euler_double_t euler)
+{
+    xQueueSend(bno055_euler_queue, &euler, portMAX_DELAY);
+}
