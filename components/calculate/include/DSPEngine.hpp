@@ -9,8 +9,6 @@
 #include <memory>
 #include <math.h>
 
-#define N_SAMPLES 512
-
 class DSPEngine : public Thread {
 public:
     DSPEngine(std::shared_ptr<Bno055Driver> bno055) : 
@@ -19,11 +17,14 @@ public:
     ~DSPEngine() = default;
     
     void run() override;
+    QueueHandle_t get_dsp_queue_handle() { return dsp_queue_handle; }
 
 private:
     std::shared_ptr<Bno055Driver> bno055;
+    QueueHandle_t dsp_queue_handle = xQueueCreate(10, sizeof(float));
 
     static constexpr auto TAG = "DSPEngine";
+    static constexpr int N_SAMPLES = 512;
     static constexpr int N = N_SAMPLES;
     
     alignas(16) float input_buffers_[2][N]; 

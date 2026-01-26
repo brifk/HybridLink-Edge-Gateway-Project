@@ -1,3 +1,4 @@
+#include "DSPEngine.hpp"
 #include "MQTTClient.hpp"
 #include "Thread.hpp"
 #include "bno055driver.hpp"
@@ -5,26 +6,38 @@
 
 class MQTTTask : public Thread {
 public:
-    MQTTTask(std::shared_ptr<MQTTClient> mqtt_client, std::shared_ptr<Bno055Driver> bno055)
+    MQTTTask(std::shared_ptr<MQTTClient> mqtt_client, std::shared_ptr<Bno055Driver> bno055, std::shared_ptr<DSPEngine> dsp_engine)
         : Thread("MQTTTask", 1024 * 5, PRIO_MQTT, 0)
         , mqtt_client(std::move(mqtt_client))
-        , bno055(std::move(bno055)) { };
+        , bno055(std::move(bno055))
+        , dsp_engine(std::move(dsp_engine)) { };
     ~MQTTTask() { };
     void run() override
     {
         mqtt_client->init();
         while (1) {
             if (mqtt_client->get_status() == MQTTClient::CONNECTED) {
-                bno055_euler_double_t euler;
-                if (xQueueReceive(bno055->get_euler_queue_handle(), &euler, portMAX_DELAY)) {
-                    // TODO: 后面改成json格式
-                    char euler_str[128];
-                    snprintf(euler_str, sizeof(euler_str), "{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f}", euler.r, euler.p, euler.h);
-                    mqtt_client->publish("bno055/euler", euler_str);
+                float dsp_data[128];
+                if (xQueueReceive(dsp_engine->get_dsp_queue_handle(), &dsp_data, portMAX_DELAY)) {
+                    std::string dsp_str = "";
+                    for (int i = 0; i < 128; i++) {
+                        if (i > 0) {
+                            dsp_str += ",";
+                        }
+                        char temp_buffer[20]; 
+                        snprintf(temp_buffer, sizeof(temp_buffer), "%.2f", dsp_data[i]);
+                        dsp_str += temp_buffer;
+
+                        // 防止字符串过长
+                        if (dsp_str.length() >= 2000) {
+                            break;
+                        }
+                    }
+                    mqtt_client->publish("bno055/dsp", dsp_str.c_str());
                 }
                 ESP_LOGI(TAG, "MQTTTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
             } else {
-                vTaskDelay(pdMS_TO_TICKS(10));  //未连接的时候不能一直占着cpu
+                vTaskDelay(pdMS_TO_TICKS(10)); // 未连接的时候不能一直占着cpu
             }
         }
     };
@@ -41,6 +54,7 @@ private:
     static constexpr auto TAG = "MQTTTask";
     std::shared_ptr<MQTTClient> mqtt_client;
     std::shared_ptr<Bno055Driver> bno055;
+    std::shared_ptr<DSPEngine> dsp_engine;
 };
 
 // 由于Wifi的连接与断开是在中断中，所以需要使用任务通知来触发MQTT连接与断开
