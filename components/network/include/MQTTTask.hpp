@@ -7,7 +7,7 @@
 class MQTTTask : public Thread {
 public:
     MQTTTask(std::shared_ptr<MQTTClient> mqtt_client, std::shared_ptr<Bno055Driver> bno055, std::shared_ptr<DSPEngine> dsp_engine)
-        : Thread("MQTTTask", 1024 * 5, PRIO_MQTT, 0)
+        : Thread("MQTTTask", 1024 * 4, PRIO_MQTT, 0)
         , mqtt_client(std::move(mqtt_client))
         , bno055(std::move(bno055))
         , dsp_engine(std::move(dsp_engine)) { };
@@ -25,7 +25,7 @@ public:
                             dsp_str += ",";
                         }
                         char temp_buffer[20]; 
-                        snprintf(temp_buffer, sizeof(temp_buffer), "%.2f", dsp_data[i]);
+                        snprintf(temp_buffer, sizeof(temp_buffer), "%.7f", dsp_data[i]);
                         dsp_str += temp_buffer;
 
                         // 防止字符串过长
@@ -35,7 +35,7 @@ public:
                     }
                     mqtt_client->publish("bno055/dsp", dsp_str.c_str());
                 }
-                ESP_LOGI(TAG, "MQTTTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
+                // ESP_LOGI(TAG, "MQTTTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
             } else {
                 vTaskDelay(pdMS_TO_TICKS(10)); // 未连接的时候不能一直占着cpu
             }

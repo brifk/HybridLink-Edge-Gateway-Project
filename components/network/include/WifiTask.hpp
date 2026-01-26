@@ -5,7 +5,7 @@
 class WifiTask : public Thread {
 public:
     WifiTask(std::unique_ptr<WifiStation> wifi_station)
-        : Thread("WifiTask", 1024 * 10, PRIO_WIFI, 0)
+        : Thread("WifiTask", 1024 * 4, PRIO_WIFI, 0)
         , wifi_station(std::move(wifi_station)) { };
     ~WifiTask() { };
     void run() override
@@ -34,7 +34,7 @@ public:
                 ESP_ERROR_CHECK(esp_wifi_connect());
                 vTaskDelay(retry_interval);
             }
-            ESP_LOGI(TAG, "WifiTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
+            // ESP_LOGI(TAG, "WifiTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
         }
     };
 

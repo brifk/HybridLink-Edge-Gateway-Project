@@ -9,7 +9,6 @@ void DSPEngine::processAndShow(float* data, int length)
     dsps_bit_rev_fc32(data, length);
 
     // 3. 计算功率谱 (dB)并存回 data 数组的前半部分
-    float queue_data[length / 2];
     for (int i = 0; i < length / 2; i++) {
         float real = data[i * 2 + 0];
         float imag = data[i * 2 + 1];
@@ -18,15 +17,14 @@ void DSPEngine::processAndShow(float* data, int length)
         // 除以 N 是归一化
         float power = (real * real + imag * imag) / length;
 
-        // 防止 log(0)
         if (power < 1e-10)
             power = 1e-10;
 
-        data[i] = 10 * log10f(power);   // 空间复用
+        data[i] = 10 * log10f(power + 1e-9);   // 空间复用
         queue_data[i] = data[i];
     }
 
-    xQueueSend(dsp_queue_handle, queue_data, portMAX_DELAY);
+    xQueueSend(dsp_queue_handle, queue_data.data(), portMAX_DELAY);
 }
 
 void DSPEngine::run()

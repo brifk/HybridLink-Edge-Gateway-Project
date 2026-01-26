@@ -14,6 +14,37 @@
 
 static constexpr auto TAG = "main";
 
+void print_system_task_stats()
+{
+    // 1. 分配一个足够大的 Buffer 来存储文本信息
+    // 每个任务大概占用 40~50 字节，假设你有 20 个任务，1KB 足够了
+    char *task_list_buffer = (char *)malloc(1024);
+
+    if (task_list_buffer == NULL) {
+        ESP_LOGE(TAG, "无法分配内存给 Task List");
+        return;
+    }
+
+    // 2. 获取任务列表信息
+    // 注意：如果在 ISR (中断) 中千万不要调用这个函数
+    vTaskList(task_list_buffer);
+
+    // 3. 打印表头
+    printf("\n=======================================================\n");
+    printf("%-20s %-7s %-7s %-10s %-5s\n", "Task Name", "State", "Prio", "StackLeft", "Num");
+    printf("-------------------------------------------------------\n");
+
+    // 4. 打印内容
+    // 这里的 StackLeft 是指"历史最小剩余栈空间" (High Water Mark)
+    // 如果这个数值接近 0，说明该任务堆栈马上要溢出了，非常危险！
+    printf("%s", task_list_buffer);
+    
+    printf("=======================================================\n");
+
+    // 5. 释放内存
+    free(task_list_buffer);
+}
+
 extern "C" void app_main()
 {
     //  创建bno055对象以及相关任务
@@ -53,7 +84,8 @@ extern "C" void app_main()
     dsp_engine->start();
     
     while (1) {
-        vTaskDelay(pdMS_TO_TICKS(6000));
+        // print_system_task_stats();
+        vTaskDelay(pdMS_TO_TICKS(60000));
     }
 }
 
