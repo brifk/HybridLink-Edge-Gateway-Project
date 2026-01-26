@@ -18,6 +18,7 @@ public:
     void publish(const char* topic, const char* payload);
     void subscribe(const char* topic);
     void unsubscribe(const char* topic);
+    void mqtt_start();
     void connect();
     void disconnect();
     enum mqtt_status_t {
@@ -25,8 +26,11 @@ public:
         DISCONNECTED = 1,
     };
     mqtt_status_t get_status() { return status; };
+    void set_connected(bool connected) { have_connected = connected; };
+    bool get_connected() { return have_connected; };
 
 private:
+    bool have_connected = false;
     static mqtt_status_t status;
     static constexpr auto TAG = "MQTTClient";
     esp_mqtt_client_handle_t client;
