@@ -9,6 +9,10 @@
 #include <memory>
 #include <math.h>
 
+extern "C" {
+    #include "model.h"
+}
+
 #define N_SAMPLES 512
 
 class DSPEngine : public Thread {
