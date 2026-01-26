@@ -9,7 +9,6 @@ void DSPEngine::processAndShow(float* data, int length)
     dsps_bit_rev_fc32(data, length);
 
     // 3. 计算功率谱 (dB)并存回 data 数组的前半部分
-    double power_data[length / 2];
     for (int i = 0; i < length / 2; i++) {
         float real = data[i * 2 + 0];
         float imag = data[i * 2 + 1];
@@ -18,7 +17,6 @@ void DSPEngine::processAndShow(float* data, int length)
         // 除以 N 是归一化
         float power = (real * real + imag * imag) / length;
 
-        // 防止 log(0)
         if (power < 1e-10)
             power = 1e-10;
 

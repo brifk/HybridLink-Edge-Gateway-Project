@@ -1,3 +1,4 @@
+#include "DSPEngine.hpp"
 #include "MQTTClient.hpp"
 #include "Thread.hpp"
 #include "bno055driver.hpp"
@@ -6,15 +7,16 @@
 class MQTTTask : public Thread {
 public:
     MQTTTask(std::shared_ptr<MQTTClient> mqtt_client, std::shared_ptr<Bno055Driver> bno055)
-        : Thread("MQTTTask", 1024 * 4, PRIO_MQTT, 0)
+        : Thread("MQTTTask", 1024 * 5, PRIO_MQTT, 0)
         , mqtt_client(std::move(mqtt_client))
-        , bno055(std::move(bno055)) { };
+        , bno055(std::move(bno055))
+        , dsp_engine(std::move(dsp_engine)) { };
     ~MQTTTask() { };
     void run() override
     {
         mqtt_client->init();
         while (1) {
-            if (mqtt_client->get_status() == MQTTClient::CONNECTED) {
+if (mqtt_client->get_status() == MQTTClient::CONNECTED) {
                 bno055_euler_double_t euler;
                 if (xQueueReceive(bno055->get_euler_queue_handle(), &euler, portMAX_DELAY)) {
                     // TODO: 后面改成json格式
@@ -41,6 +43,7 @@ private:
     static constexpr auto TAG = "MQTTTask";
     std::shared_ptr<MQTTClient> mqtt_client;
     std::shared_ptr<Bno055Driver> bno055;
+    std::shared_ptr<DSPEngine> dsp_engine;
 };
 
 // 由于Wifi的连接与断开是在中断中，所以需要使用任务通知来触发MQTT连接与断开
