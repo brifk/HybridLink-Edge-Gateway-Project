@@ -17,10 +17,10 @@ public:
         mqtt_client->init();
         while (1) {
             if (mqtt_client->get_status() == MQTTClient::CONNECTED) {
-                float dsp_data[128];
+                float dsp_data[dsp_engine->get_n_samples() / 2];
                 if (xQueueReceive(dsp_engine->get_dsp_queue_handle(), &dsp_data, portMAX_DELAY)) {
                     std::string dsp_str = "";
-                    for (int i = 0; i < 128; i++) {
+                    for (int i = 0; i < dsp_engine->get_n_samples() / 2; i++) {
                         if (i > 0) {
                             dsp_str += ",";
                         }

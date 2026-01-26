@@ -18,13 +18,14 @@ public:
     
     void run() override;
     QueueHandle_t get_dsp_queue_handle() { return dsp_queue_handle; }
+    int get_n_samples() { return N_SAMPLES; }
 
 private:
     std::shared_ptr<Bno055Driver> bno055;
     QueueHandle_t dsp_queue_handle = xQueueCreate(10, sizeof(float));
 
     static constexpr auto TAG = "DSPEngine";
-    static constexpr int N_SAMPLES = 512;
+    static constexpr int N_SAMPLES = 256;
     static constexpr int N = N_SAMPLES;
     
     alignas(16) float input_buffers_[2][N]; 
