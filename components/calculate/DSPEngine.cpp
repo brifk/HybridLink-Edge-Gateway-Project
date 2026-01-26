@@ -9,7 +9,7 @@ void DSPEngine::processAndShow(float* data, int length)
     dsps_bit_rev_fc32(data, length);
 
     // 3. 计算功率谱 (dB)并存回 data 数组的前半部分
-    float power_data[length / 2];
+    double power_data[length / 2];
     for (int i = 0; i < length / 2; i++) {
         float real = data[i * 2 + 0];
         float imag = data[i * 2 + 1];
@@ -22,13 +22,20 @@ void DSPEngine::processAndShow(float* data, int length)
         if (power < 1e-10)
             power = 1e-10;
 
-        power_data[i] = 10 * log10f(power);
+        power_data[i] = 10 * log10f(power + 1e-9);
+        ESP_LOGI(TAG, "Power at bin %d: %f dB", i, power_data[i]);
     }
 
-    Eloquent::ML::Port::RandomForest rf;
-    int res = rf.predict(power_data);
+    double output_scores[2];
+    Model model;
+    model.score(power_data, output_scores);
+    ESP_LOGI(TAG, "Output Scores: %f, %f", output_scores[0], output_scores[1]);
+    if (output_scores[1] > output_scores[0]) {
+        ESP_LOGE("AI", "检测到异常！");
+    } else {
+        ESP_LOGI("AI", "系统正常");
+    }
     // TODO: 这里后面可以改成MQTT发送结果
-    ESP_LOGI(TAG, "Predicted class: %d", res);
 }
 
 void DSPEngine::run()

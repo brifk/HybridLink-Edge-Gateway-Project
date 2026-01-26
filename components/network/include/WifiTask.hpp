@@ -34,7 +34,7 @@ public:
                 ESP_ERROR_CHECK(esp_wifi_connect());
                 vTaskDelay(retry_interval);
             }
-            ESP_LOGI(TAG, "WifiTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
+            // ESP_LOGI(TAG, "WifiTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
         }
     };
 
