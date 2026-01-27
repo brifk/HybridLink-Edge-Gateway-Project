@@ -26,7 +26,6 @@ void print_system_task_stats()
     }
 
     // 2. 获取任务列表信息
-    // 注意：如果在 ISR (中断) 中千万不要调用这个函数
     vTaskList(task_list_buffer);
 
     // 3. 打印表头
@@ -38,7 +37,6 @@ void print_system_task_stats()
     // 这里的 StackLeft 是指"历史最小剩余栈空间" (High Water Mark)
     // 如果这个数值接近 0，说明该任务堆栈马上要溢出了，非常危险！
     printf("%s", task_list_buffer);
-    
     printf("=======================================================\n");
 
     // 5. 释放内存
@@ -49,7 +47,7 @@ extern "C" void app_main()
 {
     //  创建bno055对象以及相关任务
     auto bno055 = std::make_shared<Bno055Driver>();
-    // auto bno055_read_euler_task = std::make_unique<Bno055ReadEulerTask>(bno055);
+    auto bno055_read_euler_task = std::make_unique<Bno055ReadEulerTask>(bno055);
     auto bno055_read_liner_acc_z_task = std::make_unique<Bno055ReadLinerAccZTask>(bno055);
     // 创建两个led对象，以及相关任务
     std::vector<std::shared_ptr<LED>> led_list;
@@ -62,7 +60,7 @@ extern "C" void app_main()
     auto dsp_engine = std::make_shared<DSPEngine>(bno055);
     // 创建MQTT对象和相关任务
     auto mqtt_client = std::make_shared<MQTTClient>();
-    auto mqtt_task = std::make_shared<MQTTTask>(mqtt_client, bno055, dsp_engine);
+    auto mqtt_task = std::make_shared<MQTTTask>(mqtt_client, bno055);
     auto mqtt_notify_start_task = std::make_shared<MQTTNotifyStartTask>(mqtt_client);
     auto mqtt_notify_stop_task = std::make_shared<MQTTNotifyStopTask>(mqtt_client);
     // 创建Wifi对象以及相关任务
@@ -70,7 +68,7 @@ extern "C" void app_main()
     auto wifi_task = std::make_unique<WifiTask>(std::move(wifi_station));
 
     // 任务启动
-    // bno055_read_euler_task->start();
+    bno055_read_euler_task->start();
     bno055_read_liner_acc_z_task->start();
     
     led_task->start();
@@ -85,7 +83,8 @@ extern "C" void app_main()
     
     while (1) {
         // print_system_task_stats();
-        vTaskDelay(pdMS_TO_TICKS(60000));
+        // ESP_LOGI("DEBUG", "Free Heap: %d", esp_get_free_heap_size());
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 

@@ -12,21 +12,50 @@ public:
         , bno055(std::move(bno055))
         , dsp_engine(std::move(dsp_engine)) { };
     ~MQTTTask() { };
-    void run() override
+void run() override
     {
         mqtt_client->init();
+        const int BATCH_SIZE = 10;
+        bno055_euler_double_t batch_buffer[BATCH_SIZE];
+        int current_count = 0;
+        char json_payload[1024]; 
+
         while (1) {
-if (mqtt_client->get_status() == MQTTClient::CONNECTED) {
+            if (mqtt_client->get_status() == MQTTClient::CONNECTED) {
                 bno055_euler_double_t euler;
+
+                // 阻塞读取队列
                 if (xQueueReceive(bno055->get_euler_queue_handle(), &euler, portMAX_DELAY)) {
-                    // TODO: 后面改成json格式
-                    char euler_str[128];
-                    snprintf(euler_str, sizeof(euler_str), "{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f}", euler.r, euler.p, euler.h);
-                    mqtt_client->publish("bno055/euler", euler_str);
+                    
+                    // 1. 先存入缓存数组
+                    batch_buffer[current_count] = euler;
+                    current_count++;
+
+                    // 2. 如果存满了 BATCH_SIZE (10条)，就开始打包发送
+                    if (current_count >= BATCH_SIZE) {                        
+                        int offset = 0; // 记录字符串当前写到哪了
+                        offset += snprintf(json_payload + offset, sizeof(json_payload) - offset, "[");
+
+                        for (int i = 0; i < BATCH_SIZE; i++) {
+                            offset += snprintf(json_payload + offset, sizeof(json_payload) - offset, 
+                                               "{\"r\":%.2f,\"p\":%.2f,\"h\":%.2f}", 
+                                               batch_buffer[i].r, 
+                                               batch_buffer[i].p, 
+                                               batch_buffer[i].h);
+                            
+                            // 如果不是最后一个元素，加逗号
+                            if (i < BATCH_SIZE - 1) {
+                                offset += snprintf(json_payload + offset, sizeof(json_payload) - offset, ",");
+                            }
+                        }
+                        offset += snprintf(json_payload + offset, sizeof(json_payload) - offset, "]");
+                        mqtt_client->publish("bno055/euler_batch", json_payload);
+                        // --- 发送后处理 ---
+                        current_count = 0; // 清零计数器
+                    }
                 }
-                // ESP_LOGI(TAG, "MQTTTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
             } else {
-                vTaskDelay(pdMS_TO_TICKS(10));  //未连接的时候不能一直占着cpu
+                vTaskDelay(pdMS_TO_TICKS(100));
             }
         }
     };

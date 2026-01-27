@@ -78,7 +78,7 @@ void MQTTClient::mqtt_event_handler(void* handler_args, esp_event_base_t base, i
 
 void MQTTClient::publish(const char* topic, const char* payload)
 {
-    esp_mqtt_client_publish(client, topic, payload, 0, 1, 0);
+    esp_mqtt_client_publish(client, topic, payload, 0, 0, 0);
 }
 
 void MQTTClient::subscribe(const char* topic)

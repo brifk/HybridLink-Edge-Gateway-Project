@@ -2,6 +2,7 @@
 #define AI_MODEL_H
 
 #include <string.h>
+#include <vector>
 class Model {
     public:
 void add_vectors(double *v1, double *v2, int size, double *result) {
@@ -12,7 +13,7 @@ void mul_vector_number(double *v1, double num, int size, double *result) {
     for(int i = 0; i < size; ++i)
         result[i] = v1[i] * num;
 }
-void score(double * input, double * output) {
+void score(std::vector<double> & input, double * output) {
     double var0[2];
     double var1[2];
     double var2[2];

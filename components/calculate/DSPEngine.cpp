@@ -21,17 +21,17 @@ void DSPEngine::processAndShow(float* data, int length)
             power = 1e-10;
 
         power_data[i] = 10 * log10f(power + 1e-9);
-        ESP_LOGI(TAG, "Power at bin %d: %f dB", i, power_data[i]);
+        // ESP_LOGI(TAG, "Power at bin %d: %f dB", i, power_data[i]);
     }
 
     double output_scores[2];
     Model model;
     model.score(power_data, output_scores);
-    ESP_LOGI(TAG, "Output Scores: %f, %f", output_scores[0], output_scores[1]);
+    // ESP_LOGI(TAG, "Output Scores: %f, %f", output_scores[0], output_scores[1]);
     if (output_scores[1] > output_scores[0]) {
         ESP_LOGE("AI", "检测到异常！");
     } else {
-        ESP_LOGI("AI", "系统正常");
+        // ESP_LOGI("AI", "系统正常");
     }
     // TODO: 这里后面可以改成MQTT发送结果
 }
