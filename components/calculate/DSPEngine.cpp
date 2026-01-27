@@ -9,7 +9,7 @@ void DSPEngine::processAndShow(float* data, int length)
     dsps_bit_rev_fc32(data, length);
 
     // 3. 计算功率谱 (dB)并存回 data 数组的前半部分
-    // 即使 data 是复数数组，我们也可以把结果存到偶数位(data[i*2])来实现原地存储
+    float power_data[length / 2];
     for (int i = 0; i < length / 2; i++) {
         float real = data[i * 2 + 0];
         float imag = data[i * 2 + 1];
@@ -22,14 +22,13 @@ void DSPEngine::processAndShow(float* data, int length)
         if (power < 1e-10)
             power = 1e-10;
 
-        data[i] = 10 * log10f(power);   // 空间复用
+        power_data[i] = 10 * log10f(power);
     }
 
-    // 4. 显示功率谱
-    if (length >= 512) {
-        ESP_LOGI(TAG, "FFT Result (0Hz - %dHz):", 100 / 2); // 假设100Hz采样
-        dsps_view(data, length / 2, 64, 10, -60, 40, '|');
-    }
+    Eloquent::ML::Port::RandomForest rf;
+    int res = rf.predict(power_data);
+    // TODO: 这里后面可以改成MQTT发送结果
+    ESP_LOGI(TAG, "Predicted class: %d", res);
 }
 
 void DSPEngine::run()

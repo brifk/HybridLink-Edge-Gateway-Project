@@ -1,0 +1,14 @@
+# Name,   Type, SubType, Offset,  Size, Flags
+nvs,      data, nvs,     ,        0x4000,
+otadata,  data, ota,     ,        0x2000,
+phy_init, data, phy,     ,        0x1000,
+# --- 上面是系统保留区 ---
+
+# --- 下面是两个 OTA 槽位，每个 1.5MB ---
+ota_0,    app,  ota_0,   ,        1536K,
+ota_1,    app,  ota_1,   ,        1536K,
+
+# --- 下面是腾出来的存储区，大约 900KB+ ---
+storage,  data, littlefs,  ,        0xE0000,
+
+# 需要主动改变分区表

@@ -14,10 +14,12 @@ public:
     void run() override
     {
         bno055->init();
+        TickType_t xLastWakeTime = xTaskGetTickCount();
         while (true) {
             bno055_euler_double_t euler = bno055->read_double_euler();
-            ESP_LOGI(TAG, "euler: %f, %f, %f", euler.h, euler.r, euler.p);
-            vTaskDelay(pdMS_TO_TICKS(500));
+            bno055->bno055_euler_queue_push(euler);
+            // ESP_LOGI(TAG, "euler: %f, %f, %f", euler.h, euler.r, euler.p);
+            vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(10));
             // ESP_LOGI(TAG, "Bno055ReadEulerTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
         }
     }
@@ -36,10 +38,12 @@ public:
     void run() override
     {
         bno055->init();
+        TickType_t xLastWakeTime = xTaskGetTickCount();
         while (true) {
             double linear_acc_z = bno055->read_linear_accel_z();
-            ESP_LOGI(TAG, "linear_acc_z: %f", linear_acc_z);
-            vTaskDelay(pdMS_TO_TICKS(500));
+            // ESP_LOGI(TAG, "linear_acc_z: %f", linear_acc_z);
+            bno055->bno055_linear_accel_z_queue_push(linear_acc_z);
+            vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(10));
             // ESP_LOGI(TAG, "Bno055ReadLinerAccZTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
         }
     }

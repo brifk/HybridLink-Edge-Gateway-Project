@@ -10,6 +10,10 @@
 #include <array>
 #include <cmath>
 
+extern "C" {
+    #include "model.h"
+}
+
 #define N_SAMPLES 512
 
 class DSPEngine : public Thread {
@@ -36,5 +40,6 @@ private:
     bool fft_initialized_ = false;
     
     // FFT 处理并显示频谱
+    // TODO: 后面再实现对频谱的分析
     void processAndShow(float* data, int length);
 };
