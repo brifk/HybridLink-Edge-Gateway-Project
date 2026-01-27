@@ -9,10 +9,13 @@
 #include "led.hpp"
 #include "nvs_flash.h"
 #include "mqtt_client.h"
+#include <string>
 
 class MQTTClient {
 public:
-    MQTTClient() { };
+    MQTTClient() { 
+        mqtt_event_queue = xQueueCreate(10, sizeof(std::string*));
+    };
     ~MQTTClient() { };
     void init();
     void publish(const char* topic, const char* payload);
@@ -28,8 +31,10 @@ public:
     mqtt_status_t get_status() { return status; };
     void set_connected(bool connected) { have_connected = connected; };
     bool get_connected() { return have_connected; };
+    QueueHandle_t get_event_queue_handle() { return mqtt_event_queue; };
 
 private:
+    QueueHandle_t mqtt_event_queue;
     bool have_connected = false;
     static mqtt_status_t status;
     static constexpr auto TAG = "MQTTClient";

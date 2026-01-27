@@ -41,7 +41,7 @@ void MQTTClient::init()
 
     client = esp_mqtt_client_init(&mqtt_cfg);
     /* The last argument may be used to pass data to the event handler, in this example mqtt_event_handler */
-    esp_mqtt_client_register_event(client, static_cast<esp_mqtt_event_id_t>(ESP_EVENT_ANY_ID), mqtt_event_handler, NULL);
+    esp_mqtt_client_register_event(client, static_cast<esp_mqtt_event_id_t>(ESP_EVENT_ANY_ID), mqtt_event_handler, this);
 }
 
 void MQTTClient::mqtt_start()
@@ -57,20 +57,29 @@ void MQTTClient::mqtt_event_handler(void* handler_args, esp_event_base_t base, i
 
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_CONNECTED:
+        static_cast<MQTTClient*>(handler_args)->subscribe("esp32/command");
         status = CONNECTED;
         break;
     case MQTT_EVENT_DISCONNECTED:
+        static_cast<MQTTClient*>(handler_args)->unsubscribe("esp32/command");
         status = DISCONNECTED;
         break;
     case MQTT_EVENT_PUBLISHED:
         break;
     case MQTT_EVENT_SUBSCRIBED:
-        // TODO: 处理订阅成功事件
         break;
     case MQTT_EVENT_UNSUBSCRIBED:
         break;
     case MQTT_EVENT_ERROR:
         break;
+    case MQTT_EVENT_DATA: {
+        std::string* payload_ptr = new std::string(event->data, event->data_len);
+        if (xQueueSend(static_cast<MQTTClient*>(handler_args)->get_event_queue_handle(), &payload_ptr, 0) != pdTRUE) {
+            ESP_LOGE(TAG, "Queue full, deleting msg");
+            delete payload_ptr;
+        }
+        break;
+    }
     default:
         break;
     }
@@ -93,7 +102,7 @@ void MQTTClient::unsubscribe(const char* topic)
 
 void MQTTClient::connect()
 {
-    if(!get_connected())
+    if (!get_connected())
         return;
     esp_mqtt_client_reconnect(client);
 }

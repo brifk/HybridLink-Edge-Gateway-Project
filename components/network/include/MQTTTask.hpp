@@ -12,13 +12,13 @@ public:
         , bno055(std::move(bno055))
         , dsp_engine(std::move(dsp_engine)) { };
     ~MQTTTask() { };
-void run() override
+    void run() override
     {
         mqtt_client->init();
         const int BATCH_SIZE = 10;
         bno055_euler_double_t batch_buffer[BATCH_SIZE];
         int current_count = 0;
-        char json_payload[1024]; 
+        char json_payload[1024];
 
         while (1) {
             if (mqtt_client->get_status() == MQTTClient::CONNECTED) {
@@ -26,23 +26,23 @@ void run() override
 
                 // 阻塞读取队列
                 if (xQueueReceive(bno055->get_euler_queue_handle(), &euler, portMAX_DELAY)) {
-                    
+
                     // 1. 先存入缓存数组
                     batch_buffer[current_count] = euler;
                     current_count++;
 
                     // 2. 如果存满了 BATCH_SIZE (10条)，就开始打包发送
-                    if (current_count >= BATCH_SIZE) {                        
+                    if (current_count >= BATCH_SIZE) {
                         int offset = 0; // 记录字符串当前写到哪了
                         offset += snprintf(json_payload + offset, sizeof(json_payload) - offset, "[");
 
                         for (int i = 0; i < BATCH_SIZE; i++) {
-                            offset += snprintf(json_payload + offset, sizeof(json_payload) - offset, 
-                                               "{\"r\":%.2f,\"p\":%.2f,\"h\":%.2f}", 
-                                               batch_buffer[i].r, 
-                                               batch_buffer[i].p, 
-                                               batch_buffer[i].h);
-                            
+                            offset += snprintf(json_payload + offset, sizeof(json_payload) - offset,
+                                "{\"r\":%.2f,\"p\":%.2f,\"h\":%.2f}",
+                                batch_buffer[i].r,
+                                batch_buffer[i].p,
+                                batch_buffer[i].h);
+
                             // 如果不是最后一个元素，加逗号
                             if (i < BATCH_SIZE - 1) {
                                 offset += snprintf(json_payload + offset, sizeof(json_payload) - offset, ",");
@@ -124,5 +124,31 @@ public:
     }
 
 private:
+    std::shared_ptr<MQTTClient> mqtt_client;
+};
+
+class MQTTSubscribeTask : public Thread {
+public:
+    MQTTSubscribeTask(std::shared_ptr<MQTTClient> mqtt_client)
+        : Thread("MQTTSubscribeTask", 1024 * 5, PRIO_MQTT, 0)
+        , mqtt_client(std::move(mqtt_client)) { };
+    ~MQTTSubscribeTask() { };
+    void run() override
+    {
+        std::string* rx_msg_ptr = nullptr; 
+        while (1) {
+            if (xQueueReceive(mqtt_client->get_event_queue_handle(), &rx_msg_ptr, portMAX_DELAY)) {
+                if (rx_msg_ptr != nullptr) {
+                    ESP_LOGI(TAG, "Received message: %s", rx_msg_ptr->c_str());
+                    // TODO: 在这里做你的业务逻辑，比如解析 JSON 控制硬件
+                    delete rx_msg_ptr;
+                    rx_msg_ptr = nullptr;
+                }
+            }
+        }
+    };
+
+private:
+    static constexpr auto TAG = "MQTTSubscribeTask";
     std::shared_ptr<MQTTClient> mqtt_client;
 };

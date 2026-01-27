@@ -63,6 +63,7 @@ extern "C" void app_main()
     auto mqtt_task = std::make_shared<MQTTTask>(mqtt_client, bno055);
     auto mqtt_notify_start_task = std::make_shared<MQTTNotifyStartTask>(mqtt_client);
     auto mqtt_notify_stop_task = std::make_shared<MQTTNotifyStopTask>(mqtt_client);
+    auto mqtt_subscribe_task = std::make_shared<MQTTSubscribeTask>(mqtt_client);
     // 创建Wifi对象以及相关任务
     auto wifi_station = std::make_unique<WifiStation>(mqtt_task, mqtt_notify_start_task, mqtt_notify_stop_task);
     auto wifi_task = std::make_unique<WifiTask>(std::move(wifi_station));
@@ -78,6 +79,7 @@ extern "C" void app_main()
     mqtt_task->start();
     mqtt_notify_start_task->start();
     mqtt_notify_stop_task->start();
+    mqtt_subscribe_task->start();
 
     dsp_engine->start();
     
