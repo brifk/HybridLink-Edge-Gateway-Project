@@ -24,6 +24,7 @@ public:
                 }
                 ESP_LOGI(TAG, "MQTTTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
             }
+            vTaskDelay(pdMS_TO_TICKS(10));
         }
     };
 
@@ -56,11 +57,20 @@ public:
             mqtt_client->connect();
         }
     };
+//增加了普通任务中触发通知的函数
     void notify_start()
+    {
+        if (this->getHandle() != NULL) {
+            xTaskNotifyGive(this->getHandle());
+        }
+    };
+//中断中触发通知的函数
+    void notify_start_FromISR()
     {
         BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         if (this->getHandle() != NULL) {
             vTaskNotifyGiveFromISR(this->getHandle(), &xHigherPriorityTaskWoken);
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
     };
 

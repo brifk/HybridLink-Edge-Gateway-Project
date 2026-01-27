@@ -40,7 +40,7 @@ void DSPEngine::run()
         ESP_LOGE(TAG, "FFT Init Failed: %d", ret);
         return;
     }
-    dsps_wind_hann_f32(wind_, N); // 生成窗函数
+    dsps_wind_hann_f32(wind_.data(), N); // 生成窗函数
     fft_initialized_ = true;
     double linear_accel_z = 0;
 
@@ -53,8 +53,8 @@ void DSPEngine::run()
             write_sample_idx_++;
 
             if (write_sample_idx_ >= N) {
-                // A. 获取刚刚填满的 buffer 指针
-                auto process_ptr = input_buffers_[write_buffer_idx_];
+                // A. 获取刚刚填满的 buffer 引用
+                auto& process_buf = input_buffers_[write_buffer_idx_];
 
                 // B. 切换到另一个 buffer 继续接收 (让下一轮循环使用)
                 write_buffer_idx_ = !write_buffer_idx_; // 0 -> 1, 1 -> 0
@@ -63,13 +63,13 @@ void DSPEngine::run()
                 // C. 准备 FFT 输入数据 (加窗 + 构造复数)
                 for (int i = 0; i < N; i++) {
                     // 实部 = 原始数据 * 窗函数
-                    y_cf_[i * 2 + 0] = process_ptr[i] * wind_[i];
+                    y_cf_[i * 2 + 0] = process_buf[i] * wind_[i];
                     // 虚部 = 0
                     y_cf_[i * 2 + 1] = 0;
                 }
 
                 // D. 执行 FFT 计算
-                processAndShow(y_cf_, N);
+                processAndShow(y_cf_.data(), N);
             }
         }
     }
