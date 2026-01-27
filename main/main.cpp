@@ -13,20 +13,16 @@
 #include "DSPEngine.hpp"
 #include "MQTTClient.hpp"
 #include "MQTTTask.hpp"
-#include "UartOTAReceiver.hpp"
+#include "OTAServer.hpp"
 
 static constexpr auto TAG = "main";
 
 extern "C" void app_main()
 {
-    //OTA首启自检
-    if (!UartOTAReceiver::performDiagnostic()) {
-        ESP_LOGW(TAG, "Application marked invalid. Rolling back to previous version...");
-        UartOTAReceiver::markAppInvalidAndRollback();
-    } else {
-        ESP_LOGI(TAG, "Application valid.");
-        UartOTAReceiver::markAppValid();
-    }
+    // HTTP OTA 首启自检（使用 OTAServer 静态方法）
+    OTAServer::printPartitionInfo();
+    ESP_LOGI(TAG, "Current firmware version: %s", OTAServer::getCurrentVersion());
+    
     //  创建bno055对象以及相关任务
     auto bno055 = std::make_shared<Bno055Driver>();
     auto bno055_read_euler_task = std::make_unique<Bno055ReadEulerTask>(bno055);
@@ -48,8 +44,6 @@ extern "C" void app_main()
     auto wifi_task = std::make_unique<WifiTask>(std::move(wifi_station));
     // 创建DSP引擎对象以及相关任务
     auto dsp_engine = std::make_shared<DSPEngine>(bno055);
-    // 创建UART OTA接收器
-    auto uart_ota_receiver = std::make_unique<UartOTAReceiver>(UART_NUM_1, 17, 18, 921600);
 
     // 任务启动
     bno055_read_euler_task->start();
@@ -63,8 +57,6 @@ extern "C" void app_main()
     mqtt_notify_start_task->start();
     mqtt_notify_stop_task->start();
 
-    uart_ota_receiver->start();
-    
     dsp_engine->start();
     
     while (1) {
