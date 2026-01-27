@@ -1,0 +1,70 @@
+# OrangePi OTA Gateway
+
+Python依赖说明：
+- pyserial: 串口通信
+- paho-mqtt: MQTT客户端
+
+## 安装方法
+
+### OrangePi上安装
+```bash
+# 在OrangePi上运行
+sudo ./install.sh
+```
+
+### 手动安装依赖
+```bash
+pip3 install pyserial paho-mqtt
+```
+
+## 文件说明
+
+| 文件 | 说明 |
+|------|------|
+| ota_protocol.py | OTA协议定义，与ESP32端协议一致 |
+| uart_ota_sender.py | UART串口固件发送器 |
+| mqtt_ota_client.py | MQTT客户端，接收云端固件并转发 |
+| ec20_dial.sh | EC20 4G模块拨号脚本 |
+| install.sh | 安装脚本 |
+
+## 使用方法
+
+### 直接通过串口发送固件
+```bash
+python3 uart_ota_sender.py firmware.bin -p /dev/ttyUSB0 -b 921600 -v 1.0.0
+```
+
+### 通过MQTT接收固件
+```bash
+python3 mqtt_ota_client.py \
+    --mqtt-host your-emqx-server.com \
+    --mqtt-port 1883 \
+    --device-id esp32_device_001 \
+    --serial-port /dev/ttyUSB0
+```
+
+## MQTT主题说明
+
+| 主题 | 方向 | 说明 |
+|------|------|------|
+| ota/{device_id}/firmware | 下行 | 固件数据 |
+| ota/{device_id}/control | 下行 | 控制命令 |
+| ota/{device_id}/status | 上行 | 状态上报 |
+| ota/{device_id}/progress | 上行 | 进度上报 |
+
+### 固件消息格式
+```json
+{
+    "version": "1.0.0",
+    "project": "ESP32-Firmware",
+    "size": 123456,
+    "md5": "abc123...",
+    "data": "base64_encoded_firmware_data"
+}
+```
+
+### 控制命令
+```json
+{"command": "status"}   // 查询状态
+{"command": "rollback"} // 请求回滚
+```

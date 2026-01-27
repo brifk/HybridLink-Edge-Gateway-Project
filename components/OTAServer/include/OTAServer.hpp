@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Thread.hpp"
+#include "OTAProtocol.hpp"
+#include "UartOTAReceiver.hpp"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -8,6 +10,9 @@
 #include "esp_https_ota.h"
 #include <string>
 
+/**
+ * @brief HTTP OTA服务器类 (保留原有功能)
+ */
 class OTAServer : public Thread {
 public:
     OTAServer()
@@ -47,4 +52,4 @@ public:
 private:
     static constexpr auto TAG = "OTAServer";
     std::string url;
-}
+};

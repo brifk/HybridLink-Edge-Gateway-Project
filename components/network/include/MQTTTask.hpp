@@ -1,3 +1,5 @@
+#pragma once
+
 #include "MQTTClient.hpp"
 #include "Thread.hpp"
 #include "bno055driver.hpp"
