@@ -2,6 +2,7 @@
 #include "MQTTClient.hpp"
 #include "Thread.hpp"
 #include "bno055driver.hpp"
+#include <cJSON.h>
 #include <memory>
 
 class MQTTTask : public Thread {
@@ -16,7 +17,8 @@ public:
     {
         mqtt_client->init();
         const int BATCH_SIZE = 10;
-        bno055_euler_double_t batch_buffer[BATCH_SIZE];
+        // bno055_euler_double_t batch_buffer[BATCH_SIZE];
+        std::vector<bno055_euler_double_t> batch_buffer(BATCH_SIZE);
         int current_count = 0;
         char json_payload[1024];
 
@@ -49,7 +51,7 @@ public:
                             }
                         }
                         offset += snprintf(json_payload + offset, sizeof(json_payload) - offset, "]");
-                        mqtt_client->publish("bno055/euler_batch", json_payload);
+                        mqtt_client->publish("bno055/euler", json_payload);
                         // --- 发送后处理 ---
                         current_count = 0; // 清零计数器
                     }
@@ -129,9 +131,11 @@ private:
 
 class MQTTSubscribeTask : public Thread {
 public:
-    MQTTSubscribeTask(std::shared_ptr<MQTTClient> mqtt_client)
-        : Thread("MQTTSubscribeTask", 1024 * 5, PRIO_MQTT, 0)
-        , mqtt_client(std::move(mqtt_client)) { };
+    MQTTSubscribeTask(std::shared_ptr<MQTTClient> mqtt_client, std::shared_ptr<Bno055Driver> bno055, std::vector<std::shared_ptr<LED>> led_list)
+        : Thread("MQTTSubscribeTask", 1024 * 8, PRIO_MQTT, 0)
+        , mqtt_client(std::move(mqtt_client))
+        , bno055(std::move(bno055))
+        , led_list(std::move(led_list)) { };
     ~MQTTSubscribeTask() { };
     void run() override
     {
@@ -140,15 +144,34 @@ public:
             if (xQueueReceive(mqtt_client->get_event_queue_handle(), &rx_msg_ptr, portMAX_DELAY)) {
                 if (rx_msg_ptr != nullptr) {
                     ESP_LOGI(TAG, "Received message: %s", rx_msg_ptr->c_str());
-                    // TODO: 在这里做你的业务逻辑，比如解析 JSON 控制硬件
+                    cJSON* root = cJSON_Parse(rx_msg_ptr->c_str());
+
+                    cJSON *cmd_item = cJSON_GetObjectItemCaseSensitive(root, "cmd");
+                    if (cJSON_IsString(cmd_item) && (cmd_item->valuestring != NULL)) {
+                        // TODO: 具体控制逻辑
+                        if(strcmp(cmd_item->valuestring, "ota") == 0) {
+                            ESP_LOGI(TAG, "OTA command received");
+                        } else if(strcmp(cmd_item->valuestring, "led") == 0) {
+                            ESP_LOGI(TAG, "LED command received");
+                        } else if(strcmp(cmd_item->valuestring, "bno055") == 0) {
+                            ESP_LOGI(TAG, "BNO055 command received");
+                        }
+                    }
+
+                    cJSON_Delete(root);
                     delete rx_msg_ptr;
                     rx_msg_ptr = nullptr;
+                } else {
+                    ESP_LOGE(TAG, "Received NULL message");
                 }
             }
+            ESP_LOGI(TAG, "MQTTSubscribeTask Stack High Water Mark: %d", uxTaskGetStackHighWaterMark(NULL));
         }
     };
 
 private:
     static constexpr auto TAG = "MQTTSubscribeTask";
     std::shared_ptr<MQTTClient> mqtt_client;
+    std::shared_ptr<Bno055Driver> bno055;
+    std::vector<std::shared_ptr<LED>> led_list;
 };

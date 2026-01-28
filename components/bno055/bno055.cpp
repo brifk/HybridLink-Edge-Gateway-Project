@@ -3,7 +3,7 @@
 
 i2c_master_dev_handle_t Bno055Driver::i2c_master_dev_handle = nullptr;
 i2c_master_bus_handle_t Bno055Driver::i2c_master_bus_handle = nullptr;
-SemaphoreHandle_t Bno055Driver::bno055_mutex = xSemaphoreCreateMutex();
+SemaphoreHandle_t Bno055Driver::bno055_mutex;
 
 esp_err_t Bno055Driver::init()
 {
@@ -34,7 +34,8 @@ esp_err_t Bno055Driver::init()
 }
 
 // 由于bno055被两个线程使用，需要加锁读取保证线程安全
-bno055_euler_double_t Bno055Driver::read_double_euler() {
+bno055_euler_double_t Bno055Driver::read_double_euler()
+{
     if (bno055_mutex == NULL) {
         ESP_LOGE(TAG, "bno055 mutex is NULL");
         return euler;
@@ -43,7 +44,8 @@ bno055_euler_double_t Bno055Driver::read_double_euler() {
     return euler;
 }
 
-double Bno055Driver::read_linear_accel_z() {
+double Bno055Driver::read_linear_accel_z()
+{
     if (bno055_mutex == NULL) {
         ESP_LOGE(TAG, "bno055 mutex is NULL");
         return linear_accel_z;
@@ -54,7 +56,7 @@ double Bno055Driver::read_linear_accel_z() {
 
 s8 Bno055Driver::bno055read(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 wr_len)
 {
-    xSemaphoreTake(bno055_mutex, portMAX_DELAY);
+    xSemaphoreTake(bno055_mutex, 10);
     esp_err_t err = i2c_master_transmit_receive(i2c_master_dev_handle, &reg_addr, 1, reg_data, wr_len, I2C_MASTER_TIMEOUT_MS);
     xSemaphoreGive(bno055_mutex);
     if (err != ESP_OK) {
@@ -74,7 +76,7 @@ s8 Bno055Driver::bno055write(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 wr_len)
     }
     write_buffer[0] = reg_addr;
     memcpy(&write_buffer[1], reg_data, wr_len);
-    xSemaphoreTake(bno055_mutex, portMAX_DELAY);
+    xSemaphoreTake(bno055_mutex, 10);
     esp_err_t err = i2c_master_transmit(i2c_master_dev_handle, write_buffer, wr_len + 1, I2C_MASTER_TIMEOUT_MS);
     xSemaphoreGive(bno055_mutex);
     free(write_buffer);

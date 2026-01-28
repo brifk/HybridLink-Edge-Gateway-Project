@@ -9,7 +9,7 @@ class Bno055ReadEulerTask : public Thread {
 public:
     Bno055ReadEulerTask(std::shared_ptr<Bno055Driver> bno055)
         : Thread("Bno055ReadEulerTask", 1024 * 3, PRIO_SENSOR, 1)
-        , bno055(bno055) { };
+        , bno055(std::move(bno055)) { };
     ~Bno055ReadEulerTask() { };
     void run() override
     {
