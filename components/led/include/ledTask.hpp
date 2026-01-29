@@ -18,6 +18,7 @@ public:
             led->init();
         }
         while (1) {
+            // TODO: 解决两个LED不能同时控制的问题
             for (auto& led : led_list) {
                 led_info_t* led_info = led->get_led_info();
                 if (led_info->state == LED_STATE_BLINK_SLOW || led_info->state == LED_STATE_BLINK_FAST) {

@@ -50,13 +50,13 @@ led_info_t* LED::get_led_info()
     static led_info_t local_led_array[2] = {
         { .gpio_num = LED_GREEN_GPIO,
             .ledc_channel = LEDC_GREEN_CHANNEL,
-            .state = LED_STATE_BLINK_SLOW,
+            .state = LED_STATE_BREATH,
             .blink_period_ms = 500, // 默认慢闪周期 (500ms)
             .control_task_handle = NULL,
             .max_duty = (1 << LEDC_DUTY_RES_SEL) - 1 },
         { .gpio_num = LED_RED_GPIO,
             .ledc_channel = LEDC_RED_CHANNEL,
-            .state = LED_STATE_BLINK_SLOW,
+            .state = LED_STATE_BREATH,
             .blink_period_ms = 500, // 默认慢闪周期 (500ms)
             .control_task_handle = NULL,
             .max_duty = (1 << LEDC_DUTY_RES_SEL) - 1 }

@@ -1,7 +1,9 @@
 #pragma once
 
 #include "esp_log.h"
+extern "C" {
 #include "led.h"
+}
 #include <string>
 
 class LED {

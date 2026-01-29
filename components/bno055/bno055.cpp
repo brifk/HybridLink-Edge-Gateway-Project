@@ -30,6 +30,7 @@ esp_err_t Bno055Driver::init()
     }
     bno055_initialized = true;
     ESP_LOGI(TAG, "bno055 init success");
+    bno055_state = bno055_state_t::INITIALIZED;
     return ESP_OK;
 }
 

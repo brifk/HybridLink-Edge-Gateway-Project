@@ -20,9 +20,19 @@ public:
         bno055.bus_write = bno055write;
         bno055.dev_addr = BNO055_I2C_ADDR1;
         bno055.delay_msec = delay_func;
+        bno055_mutex = xSemaphoreCreateMutex();
     };
 
     ~Bno055Driver() { };
+
+    enum class bno055_state_t {
+        UNINITIALIZED,
+        INITIALIZED,
+        RUNNING_EULER,
+        RUNNING_LINEAR_ACCEL_Z,
+        STOPPED_EULER,
+        STOPPED_LINEAR_ACCEL_Z,
+    } bno055_state = bno055_state_t::UNINITIALIZED;
 
     esp_err_t init();
     bno055_euler_double_t read_double_euler();

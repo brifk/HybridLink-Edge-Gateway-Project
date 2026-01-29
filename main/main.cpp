@@ -51,8 +51,8 @@ extern "C" void app_main()
     auto bno055_read_liner_acc_z_task = std::make_unique<Bno055ReadLinerAccZTask>(bno055);
     // 创建两个led对象，以及相关任务
     std::vector<std::shared_ptr<LED>> led_list;
-    led_list.push_back(std::make_shared<LED>(LED_RED));
     led_list.push_back(std::make_shared<LED>(LED_GREEN));
+    led_list.push_back(std::make_shared<LED>(LED_RED));
     auto led_task = std::make_unique<LEDTask>(led_list);
     // 创建DSP引擎对象以及相关任务
     auto dsp_engine = std::make_shared<DSPEngine>(bno055);
@@ -83,7 +83,7 @@ extern "C" void app_main()
 
     while (1) {
 #ifdef DEBUG
-        print_system_task_stats();
+        // print_system_task_stats();
         ESP_LOGI("DEBUG", "Free Heap: %d", esp_get_free_heap_size());
         vTaskDelay(pdMS_TO_TICKS(500));
 #else

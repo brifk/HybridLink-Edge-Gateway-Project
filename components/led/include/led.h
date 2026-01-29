@@ -88,4 +88,6 @@ void led_set_device_status(device_led_status_t status);
 
 void led_control_task(void *arg);
 
+void led_set_state(led_color_t led_color, led_state_t state);
+
 #endif // LED_CONTROL_H
