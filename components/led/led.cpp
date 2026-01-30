@@ -36,6 +36,7 @@ void LED::init()
     ledc_channel_cfg.duty = 0; // 初始占空比为 0
     ledc_channel_cfg.hpoint = 0;
     ledc_channel_config(&ledc_channel_cfg);
+    m_led_state = led_info->state;
     ESP_LOGI(TAG, "LED %s init", led_color_to_string(m_led_color).c_str());
 }
 
@@ -94,4 +95,9 @@ std::string LED::led_state_to_string(led_state_t led_state)
     default:
         return "UNKNOWN";
     }
+}
+
+led_state_t LED::get_state()
+{
+    return m_led_state;
 }

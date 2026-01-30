@@ -50,10 +50,13 @@ extern "C" void app_main()
     auto bno055_read_euler_task = std::make_unique<Bno055ReadEulerTask>(bno055);
     auto bno055_read_liner_acc_z_task = std::make_unique<Bno055ReadLinerAccZTask>(bno055);
     // 创建两个led对象，以及相关任务
-    std::vector<std::shared_ptr<LED>> led_list;
+    std::vector<std::shared_ptr<LED>> led_list(2);
     led_list.push_back(std::make_shared<LED>(LED_GREEN));
     led_list.push_back(std::make_shared<LED>(LED_RED));
-    auto led_task = std::make_unique<LEDTask>(led_list);
+    // auto led_task = std::make_unique<LEDTask>(led_list);
+    auto g_led_task = std::make_unique<LEDTask>(led_list[0]);
+    auto r_led_task = std::make_unique<LEDTask>(led_list[1]);
+
     // 创建DSP引擎对象以及相关任务
     auto dsp_engine = std::make_shared<DSPEngine>(bno055);
     // 创建MQTT对象和相关任务
@@ -70,7 +73,9 @@ extern "C" void app_main()
     bno055_read_euler_task->start();
     bno055_read_liner_acc_z_task->start();
 
-    led_task->start();
+    // led_task->start();
+    g_led_task->start();
+    r_led_task->start();
 
     wifi_task->start();
 

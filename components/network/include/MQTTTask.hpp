@@ -159,7 +159,11 @@ public:
                                     led_color = LED_RED;
                                 } else if (strcmp(color_item->valuestring, "GREEN") == 0) {
                                     led_color = LED_GREEN;
-                                } else {
+                                } else {    // 没有匹配到color下对应颜色，直接释放内存，结束解析
+                                    cJSON_Delete(color_item);
+                                    cJSON_Delete(cmd_item);
+                                    cJSON_Delete(root);
+                                    delete rx_msg_ptr;
                                     ESP_LOGE(TAG, "Invalid color: %s", color_item->valuestring);
                                     break;
                                 }
@@ -167,7 +171,7 @@ public:
                                 // 解析状态参数
                                 cJSON* state_item = cJSON_GetObjectItemCaseSensitive(root, "state");
                                 if (cJSON_IsString(state_item) && (state_item->valuestring != NULL)) {
-                                    led_state_t led_state;
+                                    led_state_t led_state = led_list[led_color]->get_state();
                                     if (strcmp(state_item->valuestring, "ON") == 0) {
                                         led_state = LED_STATE_ON;
                                     } else if (strcmp(state_item->valuestring, "OFF") == 0) {
@@ -180,20 +184,38 @@ public:
                                         led_state = LED_STATE_BLINK_DOUBLE;
                                     } else if (strcmp(state_item->valuestring, "BREATH") == 0) {
                                         led_state = LED_STATE_BREATH;
-                                    } else {
+                                    } else {    // 没有匹配到state下对应状态，直接释放内存，结束解析
+                                        cJSON_Delete(state_item);
+                                        cJSON_Delete(color_item);
+                                        cJSON_Delete(cmd_item);
+                                        cJSON_Delete(root);
+                                        delete rx_msg_ptr;
                                         ESP_LOGE(TAG, "Invalid state: %s", state_item->valuestring);
                                         break;
                                     }
 
                                     // 设置LED状态
-                                    led_list[led_color]->set(led_state);
+                                    led_list[led_color]->set(led_state);    // 所有参数都匹配到后设置状态
                                     ESP_LOGI(TAG, "LED %s set to state %s", color_item->valuestring, state_item->valuestring);
-                                } else {
+                                } else {    // 没有匹配到state字段，直接释放内存，结束解析
+                                    cJSON_Delete(state_item);
+                                    cJSON_Delete(color_item);
+                                    cJSON_Delete(cmd_item);
+                                    cJSON_Delete(root);
+                                    delete rx_msg_ptr;
                                     ESP_LOGE(TAG, "No valid state provided for LED command");
+                                    break;
                                 }
-                            } else {
+                                cJSON_Delete(state_item);
+                            } else {    // 没有匹配到color字段，直接释放内存，结束解析
+                                cJSON_Delete(color_item);
+                                cJSON_Delete(cmd_item);
+                                cJSON_Delete(root);
+                                delete rx_msg_ptr;
                                 ESP_LOGE(TAG, "No valid color provided for LED command");
+                                break;
                             }
+                            cJSON_Delete(color_item);
                         } else if (strcmp(cmd_item->valuestring, "bno055") == 0) {
                             cJSON* bno055_state_item = cJSON_GetObjectItemCaseSensitive(root, "bno055_state");
                             if (cJSON_IsString(bno055_state_item) && (bno055_state_item->valuestring != NULL)) {
@@ -206,21 +228,33 @@ public:
                                     bno055_state = Bno055Driver::bno055_state_t::STOPPED_EULER;
                                 } else if (strcmp(bno055_state_item->valuestring, "STOPPED_LINEAR_ACCEL_Z") == 0) {
                                     bno055_state = Bno055Driver::bno055_state_t::STOPPED_LINEAR_ACCEL_Z;
-                                } else {
+                                } else {    // 没有匹配到bno055_state下对应状态，直接释放内存，结束解析
+                                    cJSON_Delete(bno055_state_item);
+                                    cJSON_Delete(cmd_item);
+                                    cJSON_Delete(root);
+                                    delete rx_msg_ptr;  
                                     ESP_LOGE(TAG, "Invalid bno055_state: %s", bno055_state_item->valuestring);
                                     break;
                                 }
                                 bno055->bno055_state = bno055_state;
                                 ESP_LOGI(TAG, "bno055 state set to %s", bno055_state_item->valuestring);
-                            } else {
+                            } else {    // 没有匹配到bno055_state字段，直接释放内存，结束解析
+                                cJSON_Delete(bno055_state_item);
+                                cJSON_Delete(cmd_item);
+                                cJSON_Delete(root);
+                                delete rx_msg_ptr;  
                                 ESP_LOGE(TAG, "No valid bno055_state provided");
+                                break;
                             }
+                            cJSON_Delete(bno055_state_item);
                         } else {
                             ESP_LOGE(TAG, "Unknown command: %s", cmd_item->valuestring);
                         }
                     }
+                    cJSON_Delete(cmd_item);
+                    cJSON_Delete(root);
                     delete rx_msg_ptr;
-                    rx_msg_ptr = nullptr;
+                    rx_msg_ptr = nullptr;   // 所有参数都匹配到后，释放内存
                 } else {
                     ESP_LOGE(TAG, "Received NULL message");
                 }
