@@ -14,33 +14,41 @@
 
 static constexpr auto TAG = "main";
 
-void print_system_task_stats()
-{
-    // 1. 分配一个足够大的 Buffer 来存储文本信息
-    // 每个任务大概占用 40~50 字节，假设你有 20 个任务，1KB 足够了
-    char* task_list_buffer = (char*)malloc(1024);
+void dump_system_status() {
+    static const char *SYS_TAG = "SYS_CHECK";
 
-    if (task_list_buffer == NULL) {
-        ESP_LOGE(TAG, "无法分配内存给 Task List");
-        return;
+    // --- 1. 内存余量监控 ---
+    // 内部 RAM (最宝贵的资源)
+    uint32_t free_internal = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+    uint32_t min_internal  = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL);
+    
+    // 外部 PSRAM (如果有)
+    uint32_t free_psram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+
+    ESP_LOGI(SYS_TAG, "---------------- Memory Stats ----------------");
+    ESP_LOGI(SYS_TAG, "Internal Free: %lu bytes (Min Ever: %lu bytes)", free_internal, min_internal);
+    if (heap_caps_get_total_size(MALLOC_CAP_SPIRAM) > 0) {
+        ESP_LOGI(SYS_TAG, "PSRAM Free:    %lu bytes", free_psram);
     }
 
-    // 2. 获取任务列表信息
-    vTaskList(task_list_buffer);
+    // --- 2. CPU 任务状态统计 ---
+    // 如果没有在 menuconfig 开启宏，这部分将跳过
+#if configGENERATE_RUN_TIME_STATS
+    ESP_LOGI(SYS_TAG, "---------------- Task Stats ------------------");
+    // 动态分配内存给 buffer，因为任务多了字符串会很长
+    char *buffer = (char *)malloc(2048);
+    if (buffer) {
+        vTaskGetRunTimeStats(buffer);
+        printf("%s", buffer); // 直接打印格式化好的表格
+        free(buffer);
+    }
+#else
+    ESP_LOGW(SYS_TAG, "Enable configGENERATE_RUN_TIME_STATS in menuconfig to see CPU usage.");
+#endif
 
-    // 3. 打印表头
-    printf("\n=======================================================\n");
-    printf("%-20s %-7s %-7s %-10s %-5s\n", "Task Name", "State", "Prio", "StackLeft", "Num");
-    printf("-------------------------------------------------------\n");
-
-    // 4. 打印内容
-    // 这里的 StackLeft 是指"历史最小剩余栈空间" (High Water Mark)
-    // 如果这个数值接近 0，说明该任务堆栈马上要溢出了，非常危险！
-    printf("%s", task_list_buffer);
-    printf("=======================================================\n");
-
-    // 5. 释放内存
-    free(task_list_buffer);
+    // --- 3. 栈深度监控 (当前调用者的栈) ---
+    ESP_LOGI(SYS_TAG, "Current Task Stack High Water Mark: %u bytes", uxTaskGetStackHighWaterMark(NULL));
+    ESP_LOGI(SYS_TAG, "----------------------------------------------");
 }
 
 extern "C" void app_main()
@@ -50,10 +58,8 @@ extern "C" void app_main()
     auto bno055_read_euler_task = std::make_unique<Bno055ReadEulerTask>(bno055);
     auto bno055_read_liner_acc_z_task = std::make_unique<Bno055ReadLinerAccZTask>(bno055);
     // 创建两个led对象，以及相关任务
-    std::vector<std::shared_ptr<LED>> led_list(2);
-    led_list.push_back(std::make_shared<LED>(LED_GREEN));
-    led_list.push_back(std::make_shared<LED>(LED_RED));
-    // auto led_task = std::make_unique<LEDTask>(led_list);
+    std::vector<std::shared_ptr<LED>> led_list{std::make_shared<LED>(LED_GREEN), std::make_shared<LED>(LED_RED)};
+    led_list[0]->ledc_init();
     auto g_led_task = std::make_unique<LEDTask>(led_list[0]);
     auto r_led_task = std::make_unique<LEDTask>(led_list[1]);
 
@@ -73,7 +79,6 @@ extern "C" void app_main()
     bno055_read_euler_task->start();
     bno055_read_liner_acc_z_task->start();
 
-    // led_task->start();
     g_led_task->start();
     r_led_task->start();
 
@@ -88,9 +93,8 @@ extern "C" void app_main()
 
     while (1) {
 #ifdef DEBUG
-        // print_system_task_stats();
-        ESP_LOGI("DEBUG", "Free Heap: %d", esp_get_free_heap_size());
-        vTaskDelay(pdMS_TO_TICKS(500));
+        dump_system_status();
+        vTaskDelay(pdMS_TO_TICKS(10000));
 #else
         vTaskDelay(pdMS_TO_TICKS(60000));
 #endif

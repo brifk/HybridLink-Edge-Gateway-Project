@@ -25,14 +25,19 @@ public:
 
     ~Bno055Driver() { };
 
-    enum class bno055_state_t {
+    enum class bno055_euler_state_t {
         UNINITIALIZED,
         INITIALIZED,
         RUNNING_EULER,
-        RUNNING_LINEAR_ACCEL_Z,
         STOPPED_EULER,
+    } bno055_euler_state = bno055_euler_state_t::UNINITIALIZED;
+
+    enum class bno055_linear_accel_z_state_t {
+        UNINITIALIZED,
+        INITIALIZED,
+        RUNNING_LINEAR_ACCEL_Z,
         STOPPED_LINEAR_ACCEL_Z,
-    } bno055_state = bno055_state_t::UNINITIALIZED;
+    } bno055_linear_accel_z_state = bno055_linear_accel_z_state_t::UNINITIALIZED;
 
     esp_err_t init();
     bno055_euler_double_t read_double_euler();

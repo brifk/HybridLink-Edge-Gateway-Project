@@ -8,7 +8,7 @@ void LED::ledc_init()
     }
     ledc_initialized = true;
     // 1. 配置 LEDC 定时器 (只需要配置一次)
-    ledc_timer_config_t ledc_timer;
+    static ledc_timer_config_t ledc_timer = { };
     ledc_timer.duty_resolution = LEDC_DUTY_RES_SEL; // 13-bit resolution
     ledc_timer.freq_hz = LEDC_FREQUENCY_HZ; // 4kHz frequency
     ledc_timer.speed_mode = LEDC_MODE_SEL; // Low Speed Mode
@@ -23,8 +23,6 @@ void LED::ledc_init()
 
 void LED::init()
 {
-    ledc_init();
-    ESP_LOGI(TAG, "LED Driver Initialization (LEDC)");
     led_info_t* led_info = get_led_info();
     // 初始化 LEDC 通道配置 (确保任务启动时 LEDC 通道配置正确)
     ledc_channel_config_t ledc_channel_cfg;
@@ -36,7 +34,6 @@ void LED::init()
     ledc_channel_cfg.duty = 0; // 初始占空比为 0
     ledc_channel_cfg.hpoint = 0;
     ledc_channel_config(&ledc_channel_cfg);
-    m_led_state = led_info->state;
     ESP_LOGI(TAG, "LED %s init", led_color_to_string(m_led_color).c_str());
 }
 
@@ -95,9 +92,4 @@ std::string LED::led_state_to_string(led_state_t led_state)
     default:
         return "UNKNOWN";
     }
-}
-
-led_state_t LED::get_state()
-{
-    return m_led_state;
 }

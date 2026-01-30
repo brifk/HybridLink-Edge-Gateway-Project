@@ -15,9 +15,9 @@ public:
     {
         bno055->init();
         TickType_t xLastWakeTime = xTaskGetTickCount();
-        bno055->bno055_state = Bno055Driver::bno055_state_t::RUNNING_EULER;
+        bno055->bno055_euler_state = Bno055Driver::bno055_euler_state_t::RUNNING_EULER;
         while (true) {
-            if (bno055->bno055_state == Bno055Driver::bno055_state_t::RUNNING_EULER) {
+            if (bno055->bno055_euler_state == Bno055Driver::bno055_euler_state_t::RUNNING_EULER) {
                 bno055_euler_double_t euler = bno055->read_double_euler();
                 bno055->bno055_euler_queue_push(euler);
                 // ESP_LOGI(TAG, "euler: %f, %f, %f", euler.h, euler.r, euler.p);
@@ -44,9 +44,9 @@ public:
     {
         bno055->init();
         TickType_t xLastWakeTime = xTaskGetTickCount();
-        bno055->bno055_state = Bno055Driver::bno055_state_t::RUNNING_LINEAR_ACCEL_Z;
+        bno055->bno055_linear_accel_z_state = Bno055Driver::bno055_linear_accel_z_state_t::RUNNING_LINEAR_ACCEL_Z;
         while (true) {
-            if (bno055->bno055_state == Bno055Driver::bno055_state_t::RUNNING_LINEAR_ACCEL_Z) {
+            if (bno055->bno055_linear_accel_z_state == Bno055Driver::bno055_linear_accel_z_state_t::RUNNING_LINEAR_ACCEL_Z) {
                 double linear_acc_z = bno055->read_linear_accel_z();
                 // ESP_LOGI(TAG, "linear_acc_z: %f", linear_acc_z);
                 bno055->bno055_linear_accel_z_queue_push(linear_acc_z);

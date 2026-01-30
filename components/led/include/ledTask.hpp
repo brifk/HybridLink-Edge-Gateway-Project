@@ -9,14 +9,14 @@ class LEDTask : public Thread {
 public:
     LEDTask(std::shared_ptr<LED> led)
         : Thread("LEDTask", 1024 * 3, PRIO_LED, 1)
-        , led(std::move(led)) { };
+        , led(led) { };
     ~LEDTask() { };
     void run() override
     {
-        led->ledc_init();
         led->init();
+        led_info_t* led_info = led->get_led_info();
         while (1) {
-            led_info_t* led_info = led->get_led_info();
+            // TODO: 解决两个LED不能同时控制的问题
             if (led_info->state == LED_STATE_BLINK_SLOW || led_info->state == LED_STATE_BLINK_FAST) {
                 // 闪烁：使用 set_duty + update_duty，利用 LEDC 驱动 GPIO
                 uint32_t period_ms = led_info->blink_period_ms;
@@ -90,18 +90,14 @@ public:
             } else if (led_info->state == LED_STATE_ON) {
                 ledc_set_duty(LEDC_MODE_SEL, led_info->ledc_channel, led_info->max_duty);
                 ledc_update_duty(LEDC_MODE_SEL, led_info->ledc_channel);
-                vTaskDelay(pdMS_TO_TICKS(50));
             } else if (led_info->state == LED_STATE_OFF) {
                 ledc_set_duty(LEDC_MODE_SEL, led_info->ledc_channel, 0);
                 ledc_update_duty(LEDC_MODE_SEL, led_info->ledc_channel);
-                vTaskDelay(pdMS_TO_TICKS(50));
             } else {
                 break;
             }
             // ESP_LOGI(TAG, "LEDTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
         }
-        // 退出任务前，确保 LEDC 输出为 0
-        led_info_t* led_info = led->get_led_info();
         ledc_set_duty(LEDC_MODE_SEL, led_info->ledc_channel, 0);
         ledc_update_duty(LEDC_MODE_SEL, led_info->ledc_channel);
         led_info->control_task_handle = NULL;
