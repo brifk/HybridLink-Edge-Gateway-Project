@@ -5,7 +5,7 @@
 class WifiTask : public Thread {
 public:
     WifiTask(std::unique_ptr<WifiStation> wifi_station)
-        : Thread("WifiTask", 1024 * 10, PRIO_WIFI, 0)
+        : Thread("WifiTask", 1024 * 4, PRIO_WIFI, 0)
         , wifi_station(std::move(wifi_station)) { };
     ~WifiTask() { };
     void run() override
@@ -19,12 +19,10 @@ public:
         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
         retry_interval = pdMS_TO_TICKS(10000);
         while (1) {
-            if (wifi_station->get_wifi_status() == WifiStation::WIFI_CONNECTED) {
-                // TODO: 连接成功后的处理
+            if (wifi_station->get_wifi_status() == WifiStation::STATUS::CONNECTED) {
                 retry_count = 0;
                 vTaskDelay(retry_interval); // 10秒检查一次连接状态
-            } else if (wifi_station->get_wifi_status() == WifiStation::WIFI_DISCONNECTED) {
-                // TODO: 断开连接后的处理
+            } else if (wifi_station->get_wifi_status() == WifiStation::STATUS::DISCONNECTED) {
                 retry_count++;
                 ESP_LOGI(TAG, "第%d次尝试连接WiFi...", retry_count);
                 if (retry_count >= 12) {
@@ -34,7 +32,7 @@ public:
                 ESP_ERROR_CHECK(esp_wifi_connect());
                 vTaskDelay(retry_interval);
             }
-            ESP_LOGI(TAG, "WifiTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
+            // ESP_LOGI(TAG, "WifiTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
         }
     };
 

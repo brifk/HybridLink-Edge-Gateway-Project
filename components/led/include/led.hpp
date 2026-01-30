@@ -1,7 +1,9 @@
 #pragma once
 
 #include "esp_log.h"
+extern "C" {
 #include "led.h"
+}
 #include <string>
 
 class LED {
@@ -12,6 +14,7 @@ public:
     void ledc_init();
     void init();
     void set(led_state_t state);
+    led_color_t get_led_color() { return m_led_color; };
     led_info_t* get_led_info();
 
 private:

@@ -6,7 +6,8 @@ set(COMPONENT_REQUIRES "Core"
                        "esp_netif"
                        json
                        "bno055"
-                       "led")
+                       "led"
+                       calculate)
 
 idf_component_register(SRCS "WifiStation.cpp" "MQTTClient.cpp"
                     INCLUDE_DIRS "include" "../../main"

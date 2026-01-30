@@ -8,7 +8,7 @@ void LED::ledc_init()
     }
     ledc_initialized = true;
     // 1. 配置 LEDC 定时器 (只需要配置一次)
-    ledc_timer_config_t ledc_timer;
+    static ledc_timer_config_t ledc_timer = { };
     ledc_timer.duty_resolution = LEDC_DUTY_RES_SEL; // 13-bit resolution
     ledc_timer.freq_hz = LEDC_FREQUENCY_HZ; // 4kHz frequency
     ledc_timer.speed_mode = LEDC_MODE_SEL; // Low Speed Mode
@@ -23,8 +23,6 @@ void LED::ledc_init()
 
 void LED::init()
 {
-    ledc_init();
-    ESP_LOGI(TAG, "LED Driver Initialization (LEDC)");
     led_info_t* led_info = get_led_info();
     // 初始化 LEDC 通道配置 (确保任务启动时 LEDC 通道配置正确)
     ledc_channel_config_t ledc_channel_cfg;
@@ -50,13 +48,13 @@ led_info_t* LED::get_led_info()
     static led_info_t local_led_array[2] = {
         { .gpio_num = LED_GREEN_GPIO,
             .ledc_channel = LEDC_GREEN_CHANNEL,
-            .state = LED_STATE_BLINK_SLOW,
+            .state = LED_STATE_BREATH,
             .blink_period_ms = 500, // 默认慢闪周期 (500ms)
             .control_task_handle = NULL,
             .max_duty = (1 << LEDC_DUTY_RES_SEL) - 1 },
         { .gpio_num = LED_RED_GPIO,
             .ledc_channel = LEDC_RED_CHANNEL,
-            .state = LED_STATE_BLINK_SLOW,
+            .state = LED_STATE_BREATH,
             .blink_period_ms = 500, // 默认慢闪周期 (500ms)
             .control_task_handle = NULL,
             .max_duty = (1 << LEDC_DUTY_RES_SEL) - 1 }
