@@ -24,7 +24,6 @@ using OTAStatusCallback = std::function<void(OTAStatus status, int progress, con
 
 /**
  * @brief HTTP OTA 服务器类
- * 
  * 从 OrangePi HTTP 服务器下载固件并执行 OTA 升级
  * OTA 链路: 云端 -> OrangePi(4G下载) -> HTTP服务器 -> ESP32(WiFi HTTP下载)
  */

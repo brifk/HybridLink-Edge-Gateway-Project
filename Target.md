@@ -100,8 +100,101 @@
 
 对于硬件初始化的部分，直接调用 ESP-IDF 的 C API，或者用 C 语言封装一层简单的驱动。
 
-* **场景**：配置 UART DMA，配置 Timer，编写中断处理函数。
+* **场景**：配置 I2C 主机通信（BNO055 传感器）、配置 LEDC PWM（LED 呼吸灯/闪烁控制）。
 * **注意**：中断服务程序（ISR）必须是 C 函数（或者 C++ 的静态函数），因为 ISR 不需要 `this` 指针。
+
+**实际代码示例 1：I2C 主机初始化与读写（bno055.c）**
+
+```c
+#include "driver/i2c_master.h"
+
+static i2c_master_bus_handle_t i2c_master_bus_handle;
+static i2c_master_dev_handle_t i2c_master_dev_handle;
+
+// I2C 主机初始化
+static void i2c_master_init(i2c_master_bus_handle_t* bus_handle, 
+                            i2c_master_dev_handle_t* dev_handle)
+{
+    i2c_master_bus_config_t bus_config = {
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .i2c_port = I2C_NUM_0,
+        .scl_io_num = GPIO_NUM_9,
+        .sda_io_num = GPIO_NUM_8,
+        .glitch_ignore_cnt = 7,
+        .flags.enable_internal_pullup = true,
+    };
+    ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, bus_handle));
+
+    i2c_device_config_t dev_config = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = BNO055_I2C_ADDR1,  // 0x28 或 0x29
+        .scl_speed_hz = 400000,  // 400kHz Fast Mode
+    };
+    ESP_ERROR_CHECK(i2c_master_bus_add_device(*bus_handle, &dev_config, dev_handle));
+}
+
+// BNO055 寄存器读取（供 C++ 封装层调用）
+s8 bno055read(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 rd_len)
+{
+    esp_err_t ret = i2c_master_transmit_receive(
+        i2c_master_dev_handle,
+        &reg_addr, 1,       // 发送寄存器地址
+        reg_data, rd_len,   // 接收数据
+        100                 // 超时 100ms
+    );
+    return (ret == ESP_OK) ? BNO055_SUCCESS : BNO055_ERROR;
+}
+```
+
+**实际代码示例 2：LEDC PWM 控制（led.c）**
+
+```c
+#include "driver/ledc.h"
+
+// LEDC 定时器初始化
+void led_init(void)
+{
+    // 配置 LEDC 定时器
+    ledc_timer_config_t ledc_timer = {
+        .speed_mode      = LEDC_LOW_SPEED_MODE,
+        .timer_num       = LEDC_TIMER_0,
+        .duty_resolution = LEDC_TIMER_13_BIT,  // 13位分辨率 (0-8191)
+        .freq_hz         = 4000,               // 4kHz PWM 频率
+        .clk_cfg         = LEDC_AUTO_CLK
+    };
+    ledc_timer_config(&ledc_timer);
+
+    // 配置 LEDC 通道（绿色 LED）
+    ledc_channel_config_t ledc_channel = {
+        .gpio_num   = GPIO_NUM_20,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .channel    = LEDC_CHANNEL_0,
+        .timer_sel  = LEDC_TIMER_0,
+        .duty       = 0,
+        .hpoint     = 0
+    };
+    ledc_channel_config(&ledc_channel);
+    
+    // 启用硬件渐变功能（用于呼吸灯效果）
+    ledc_fade_func_install(0);
+}
+
+// LED 呼吸灯效果（硬件渐变，无需 CPU 干预）
+void led_breath(ledc_channel_t channel, uint32_t max_duty)
+{
+    const int FADE_TIME_MS = 1500;
+    
+    // 渐亮
+    ledc_set_fade_with_time(LEDC_LOW_SPEED_MODE, channel, max_duty, FADE_TIME_MS);
+    ledc_fade_start(LEDC_LOW_SPEED_MODE, channel, LEDC_FADE_WAIT_DONE);
+    
+    // 渐灭
+    ledc_set_fade_with_time(LEDC_LOW_SPEED_MODE, channel, 0, FADE_TIME_MS);
+    ledc_fade_start(LEDC_LOW_SPEED_MODE, channel, LEDC_FADE_WAIT_DONE);
+}
+```
+
+*面试话术*: "底层驱动层使用纯 C 语言，直接调用 ESP-IDF 的 I2C Master 和 LEDC API。I2C 用于与 BNO055 九轴传感器通信，LEDC 的硬件渐变功能用于实现 LED 呼吸灯效果，无需 CPU 干预。"
 
 #### 2. 中间件封装层 (Middleware) -> 使用 C++ Wrapper
 
