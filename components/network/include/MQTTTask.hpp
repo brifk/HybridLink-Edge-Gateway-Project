@@ -24,7 +24,7 @@ public:
                     snprintf(euler_str, sizeof(euler_str), "{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f}", euler.r, euler.p, euler.h);
                     mqtt_client->publish("bno055/euler", euler_str);
                 }
-                ESP_LOGI(TAG, "MQTTTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
+                // ESP_LOGI(TAG, "MQTTTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));
             } else {
                 vTaskDelay(pdMS_TO_TICKS(10));  //未连接的时候不能一直占着cpu
             }

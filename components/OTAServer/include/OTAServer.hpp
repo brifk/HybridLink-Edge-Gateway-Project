@@ -7,6 +7,7 @@
 #include "esp_http_client.h"
 #include "esp_https_ota.h"
 #include "esp_ota_ops.h"
+#include "esp_crt_bundle.h"
 #include <string>
 #include <functional>
 
@@ -128,6 +129,8 @@ public:
         http_config.skip_cert_common_name_check = true;
         http_config.timeout_ms = 30000;  // 30秒超时
         http_config.buffer_size = 4096;  // 增大缓冲区
+
+        http_config.crt_bundle_attach = esp_crt_bundle_attach;
         
         // OTA 配置
         esp_https_ota_config_t ota_config = {};

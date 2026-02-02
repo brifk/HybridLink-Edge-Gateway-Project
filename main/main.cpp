@@ -3,17 +3,17 @@
 #include <vector>
 
 #include "APPConfig.h"
-#include "Thread.hpp"
-#include "bno055driver.hpp"
-#include "bno055task.hpp"
-#include "led.hpp"
-#include "ledtask.hpp"
-#include "WifiTask.hpp"
-#include "WifiStation.hpp"
 #include "DSPEngine.hpp"
 #include "MQTTClient.hpp"
 #include "MQTTTask.hpp"
 #include "OTAServer.hpp"
+#include "Thread.hpp"
+#include "WifiStation.hpp"
+#include "WifiTask.hpp"
+#include "bno055driver.hpp"
+#include "bno055task.hpp"
+#include "led.hpp"
+#include "ledtask.hpp"
 
 static constexpr auto TAG = "main";
 
@@ -22,7 +22,7 @@ extern "C" void app_main()
     // HTTP OTA 首启自检（使用 OTAServer 静态方法）
     OTAServer::printPartitionInfo();
     ESP_LOGI(TAG, "Current firmware version: %s", OTAServer::getCurrentVersion());
-    
+
     //  创建bno055对象以及相关任务
     auto bno055 = std::make_shared<Bno055Driver>();
     auto bno055_read_euler_task = std::make_unique<Bno055ReadEulerTask>(bno055);
@@ -45,10 +45,12 @@ extern "C" void app_main()
     // 创建DSP引擎对象以及相关任务
     auto dsp_engine = std::make_shared<DSPEngine>(bno055);
 
+    auto ota = std::make_unique<OTAServer>();
+
     // 任务启动
     bno055_read_euler_task->start();
     bno055_read_liner_acc_z_task->start();
-    
+
     led_task->start();
 
     wifi_task->start();
@@ -58,9 +60,12 @@ extern "C" void app_main()
     mqtt_notify_stop_task->start();
 
     dsp_engine->start();
-    
+
+    vTaskDelay(pdMS_TO_TICKS(5000));
+    ota->setURL("http://10.0.0.6:8000/HybridLink.bin");
+    ota->start();
+
     while (1) {
-        vTaskDelay(pdMS_TO_TICKS(6000));
+        vTaskDelay(pdMS_TO_TICKS(60000));
     }
 }
-
