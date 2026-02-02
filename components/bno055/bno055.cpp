@@ -7,12 +7,6 @@ SemaphoreHandle_t Bno055Driver::bno055_mutex;
 
 esp_err_t Bno055Driver::init()
 {
-    static bool bno055_initialized = false;
-    if (bno055_initialized) {
-        vTaskDelay(pdMS_TO_TICKS(1000));
-        return ESP_OK;
-    }
-    bno055_initialized = true;
     i2c_master_init(&i2c_master_bus_handle, &i2c_master_dev_handle); // 初始化i2c总线，挂载bno055
     ESP_LOGI(TAG, "i2c master init success");
     s32 comres = BNO055_ERROR;
@@ -28,7 +22,6 @@ esp_err_t Bno055Driver::init()
         ESP_LOGE(TAG, "Failed to create bno055 mutex");
         return ESP_FAIL;
     }
-    bno055_initialized = true;
     ESP_LOGI(TAG, "bno055 init success");
     bno055_euler_state = bno055_euler_state_t::INITIALIZED;
     bno055_linear_accel_z_state = bno055_linear_accel_z_state_t::INITIALIZED;

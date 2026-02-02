@@ -232,10 +232,14 @@ private:
         using bno_st = Bno055Driver::bno055_euler_state_t;
         using bno_linear_accel_z_st = Bno055Driver::bno055_linear_accel_z_state_t;
 
-        if (strcmp(state_item->valuestring, "RUNNING_EULER") == 0) bno055->bno055_euler_state = bno_st::RUNNING_EULER;
-        else if (strcmp(state_item->valuestring, "STOPPED_EULER") == 0) bno055->bno055_euler_state = bno_st::STOPPED_EULER;
-        else if (strcmp(state_item->valuestring, "RUNNING_LINEAR_ACCEL_Z") == 0) bno055->bno055_linear_accel_z_state = bno_linear_accel_z_st::RUNNING_LINEAR_ACCEL_Z;
-        else if (strcmp(state_item->valuestring, "STOPPED_LINEAR_ACCEL_Z") == 0) bno055->bno055_linear_accel_z_state = bno_linear_accel_z_st::STOPPED_LINEAR_ACCEL_Z;
+        if (strcmp(state_item->valuestring, "RUNNING_EULER") == 0) 
+            bno055->bno055_euler_state = bno_st::RUNNING_EULER;
+        else if (strcmp(state_item->valuestring, "STOPPED_EULER") == 0) 
+            bno055->bno055_euler_state = bno_st::STOPPED_EULER;
+        else if (strcmp(state_item->valuestring, "RUNNING_LINEAR_ACCEL_Z") == 0) 
+            bno055->bno055_linear_accel_z_state = bno_linear_accel_z_st::RUNNING_LINEAR_ACCEL_Z;
+        else if (strcmp(state_item->valuestring, "STOPPED_LINEAR_ACCEL_Z") == 0) 
+            bno055->bno055_linear_accel_z_state = bno_linear_accel_z_st::STOPPED_LINEAR_ACCEL_Z;
         ESP_LOGI(TAG, "bno055 state set to %s", state_item->valuestring);
     }
 };

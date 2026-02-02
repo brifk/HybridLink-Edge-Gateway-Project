@@ -71,16 +71,27 @@ public:
             } else if (led_info->state == LED_STATE_BREATH) {
                 const int FADE_TIME_MS = 1500; // 呼吸灯渐变时间 1.5 秒
 
-                // 渐亮
+                // 渐亮 - 非阻塞方式
                 ledc_set_fade_with_time(LEDC_MODE_SEL, led_info->ledc_channel, led_info->max_duty, FADE_TIME_MS);
-                ledc_fade_start(LEDC_MODE_SEL, led_info->ledc_channel, LEDC_FADE_WAIT_DONE);
+                ledc_fade_start(LEDC_MODE_SEL, led_info->ledc_channel, LEDC_FADE_NO_WAIT);
+
+                // 等待渐亮完成，同时定期重置看门狗
+                int fade_wait_time = FADE_TIME_MS / 100;  // 每100ms检查一次
+                for (int i = 0; i < fade_wait_time && led_info->state == LED_STATE_BREATH; i++) {
+                    vTaskDelay(pdMS_TO_TICKS(100));
+                }
 
                 if (led_info->state != LED_STATE_BREATH)
                     break;
 
-                // 渐暗
+                // 渐暗 - 非阻塞方式
                 ledc_set_fade_with_time(LEDC_MODE_SEL, led_info->ledc_channel, 0, FADE_TIME_MS);
-                ledc_fade_start(LEDC_MODE_SEL, led_info->ledc_channel, LEDC_FADE_WAIT_DONE);
+                ledc_fade_start(LEDC_MODE_SEL, led_info->ledc_channel, LEDC_FADE_NO_WAIT);
+
+                // 等待渐暗完成，同时定期重置看门狗
+                for (int i = 0; i < fade_wait_time && led_info->state == LED_STATE_BREATH; i++) {
+                    vTaskDelay(pdMS_TO_TICKS(100));
+                }
 
                 if (led_info->state != LED_STATE_BREATH)
                     break;
@@ -90,10 +101,13 @@ public:
             } else if (led_info->state == LED_STATE_ON) {
                 ledc_set_duty(LEDC_MODE_SEL, led_info->ledc_channel, led_info->max_duty);
                 ledc_update_duty(LEDC_MODE_SEL, led_info->ledc_channel);
+                vTaskDelay(pdMS_TO_TICKS(50));
             } else if (led_info->state == LED_STATE_OFF) {
                 ledc_set_duty(LEDC_MODE_SEL, led_info->ledc_channel, 0);
                 ledc_update_duty(LEDC_MODE_SEL, led_info->ledc_channel);
+                vTaskDelay(pdMS_TO_TICKS(50));
             } else {
+                vTaskDelay(pdMS_TO_TICKS(50));
                 break;
             }
             // ESP_LOGI(TAG, "LEDTask stack high water mark: %d", uxTaskGetStackHighWaterMark(NULL));

@@ -13,7 +13,6 @@ public:
     ~Bno055ReadEulerTask() { };
     void run() override
     {
-        bno055->init();
         TickType_t xLastWakeTime = xTaskGetTickCount();
         bno055->bno055_euler_state = Bno055Driver::bno055_euler_state_t::RUNNING_EULER;
         while (true) {
@@ -38,11 +37,10 @@ class Bno055ReadLinerAccZTask : public Thread {
 public:
     Bno055ReadLinerAccZTask(std::shared_ptr<Bno055Driver> bno055)
         : Thread("Bno055ReadLinerAccZTask", 1024 * 3, PRIO_SENSOR, 1)
-        , bno055(bno055) { };
+        , bno055(std::move(bno055)) { };
     ~Bno055ReadLinerAccZTask() { };
     void run() override
     {
-        bno055->init();
         TickType_t xLastWakeTime = xTaskGetTickCount();
         bno055->bno055_linear_accel_z_state = Bno055Driver::bno055_linear_accel_z_state_t::RUNNING_LINEAR_ACCEL_Z;
         while (true) {

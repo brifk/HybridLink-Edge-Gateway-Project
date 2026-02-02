@@ -12,4 +12,4 @@
 #define PRIO_FFT      tskIDLE_PRIORITY + 4
 #define PRIO_LED      tskIDLE_PRIORITY + 1
 
-#define DEBUG
+// #define DEBUG

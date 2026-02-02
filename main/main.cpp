@@ -55,6 +55,7 @@ extern "C" void app_main()
 {
     //  创建bno055对象以及相关任务
     auto bno055 = std::make_shared<Bno055Driver>();
+    bno055->init();
     auto bno055_read_euler_task = std::make_unique<Bno055ReadEulerTask>(bno055);
     auto bno055_read_liner_acc_z_task = std::make_unique<Bno055ReadLinerAccZTask>(bno055);
     // 创建两个led对象，以及相关任务

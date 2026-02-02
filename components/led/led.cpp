@@ -45,21 +45,7 @@ void LED::set(led_state_t state)
 
 led_info_t* LED::get_led_info()
 {
-    static led_info_t local_led_array[2] = {
-        { .gpio_num = LED_GREEN_GPIO,
-            .ledc_channel = LEDC_GREEN_CHANNEL,
-            .state = LED_STATE_BREATH,
-            .blink_period_ms = 500, // 默认慢闪周期 (500ms)
-            .control_task_handle = NULL,
-            .max_duty = (1 << LEDC_DUTY_RES_SEL) - 1 },
-        { .gpio_num = LED_RED_GPIO,
-            .ledc_channel = LEDC_RED_CHANNEL,
-            .state = LED_STATE_BREATH,
-            .blink_period_ms = 500, // 默认慢闪周期 (500ms)
-            .control_task_handle = NULL,
-            .max_duty = (1 << LEDC_DUTY_RES_SEL) - 1 }
-    };
-    return &local_led_array[m_led_color];
+    return led_get_info(m_led_color);
 }
 
 std::string LED::led_color_to_string(led_color_t led_color)
@@ -91,5 +77,128 @@ std::string LED::led_state_to_string(led_state_t led_state)
         return "BREATH";
     default:
         return "UNKNOWN";
+    }
+}
+
+// ------------------ C 层实现（从原 led.c 合并） ------------------
+
+static const char* TAG = "LED_DRIVER";
+
+led_info_t led_array[] = {
+    { .gpio_num = LED_GREEN_GPIO,
+        .ledc_channel = LEDC_GREEN_CHANNEL,
+        .state = LED_STATE_BLINK_SLOW,
+        .blink_period_ms = 500, // 默认慢闪周期 (500ms)
+        .control_task_handle = NULL,
+        .max_duty = (1 << LEDC_DUTY_RES_SEL) - 1 },
+    { .gpio_num = LED_RED_GPIO,
+        .ledc_channel = LEDC_RED_CHANNEL,
+        .state = LED_STATE_BLINK_SLOW,
+        .blink_period_ms = 500, // 默认慢闪周期 (500ms)
+        .control_task_handle = NULL,
+        .max_duty = (1 << LEDC_DUTY_RES_SEL) - 1 }
+};
+
+static const size_t num_leds = sizeof(led_array) / sizeof(led_array[0]);
+
+// 返回底层 led_array 的指针，确保单一状态来源
+led_info_t* led_get_info(led_color_t led_color)
+{
+    if ((size_t)led_color >= num_leds)
+        return NULL;
+    return &led_array[led_color];
+}
+
+void led_set_state(led_color_t led_color, led_state_t state)
+{
+    if ((size_t)led_color >= num_leds)
+        return;
+
+    led_info_t* led = &led_array[led_color];
+
+    if (led->control_task_handle != NULL) {
+        if (state == LED_STATE_ON || state == LED_STATE_OFF || (state != led->state && (led->state == LED_STATE_BLINK_SLOW || led->state == LED_STATE_BLINK_FAST || led->state == LED_STATE_BLINK_DOUBLE || led->state == LED_STATE_BREATH))) {
+            vTaskDelete(led->control_task_handle);
+            led->control_task_handle = NULL;
+            vTaskDelay(pdMS_TO_TICKS(5));
+        }
+    }
+
+    led->state = state;
+
+    switch (state) {
+    case LED_STATE_OFF:
+        ledc_set_duty(LEDC_MODE_SEL, led->ledc_channel, 0);
+        ledc_update_duty(LEDC_MODE_SEL, led->ledc_channel);
+        break;
+
+    case LED_STATE_ON:
+        ledc_set_duty(LEDC_MODE_SEL, led->ledc_channel, led->max_duty);
+        ledc_update_duty(LEDC_MODE_SEL, led->ledc_channel);
+        break;
+
+    case LED_STATE_BLINK_SLOW:
+    case LED_STATE_BLINK_FAST:
+    case LED_STATE_BLINK_DOUBLE:
+    case LED_STATE_BREATH:
+        // if (led->control_task_handle == NULL) {
+        //     xTaskCreate(led_control_task, "led_control", 3072, (void*)led, 5, &led->control_task_handle);
+        // }
+        break;
+    }
+}
+
+void led_set_device_status(device_led_status_t status)
+{
+    ESP_LOGI(TAG, "Setting Device Status: %d", status);
+
+    led_set_state(LED_GREEN, LED_STATE_OFF);
+    led_set_state(LED_RED, LED_STATE_OFF);
+
+    switch (status) {
+    case LED_STATUS_SYS_ERROR:
+        led_set_state(LED_RED, LED_STATE_BLINK_FAST);
+        break;
+
+    case LED_STATUS_CONFIG_WAIT:
+        led_set_state(LED_RED, LED_STATE_ON);
+        break;
+
+    case LED_STATUS_NETWORK_CONNECTING:
+        led_set_state(LED_GREEN, LED_STATE_BLINK_SLOW);
+        break;
+
+    case LED_STATUS_NETWORK_FAILED:
+        led_set_state(LED_RED, LED_STATE_BLINK_DOUBLE);
+        break;
+
+    case LED_STATUS_ONLINE_RUNNING:
+        led_set_state(LED_GREEN, LED_STATE_ON);
+        break;
+
+    case LED_STATUS_LOW_BATTERY_WARNING:
+        led_set_state(LED_GREEN, LED_STATE_ON);
+        led_set_state(LED_RED, LED_STATE_BREATH);
+        break;
+
+    case LED_STATUS_CHARGING:
+        led_set_state(LED_GREEN, LED_STATE_BREATH);
+        break;
+
+    case LED_STATUS_CHARGE_COMPLETE:
+        led_set_state(LED_GREEN, LED_STATE_ON);
+        break;
+
+    case LED_STATUS_CRITICAL_SHUTDOWN:
+        led_set_state(LED_RED, LED_STATE_ON);
+        ESP_LOGW(TAG, "CRITICAL SHUTDOWN initiated: Red LED ON for 2s. System halt simulated after.");
+        vTaskDelay(pdMS_TO_TICKS(2000));
+        led_set_state(LED_RED, LED_STATE_OFF);
+        ESP_LOGW(TAG, "Red LED OFF. Simulating system power-off now.");
+        break;
+
+    default:
+        ESP_LOGE(TAG, "Unknown LED status command: %d", status);
+        break;
     }
 }

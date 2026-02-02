@@ -50,7 +50,7 @@ void DSPEngine::run()
 
     while (true) {
         // 这样如果没有数据，任务会挂起，不占用 CPU，比非阻塞好
-        if (xQueueReceive(bno055->get_linear_accel_z_queue_handle(), &linear_accel_z, portMAX_DELAY)) {
+        if (xQueueReceive(bno055->get_linear_accel_z_queue_handle(), &linear_accel_z, portMAX_DELAY) == pdTRUE) {
 
             // 3. 填入乒乓缓存
             input_buffers_[write_buffer_idx_][write_sample_idx_] = static_cast<float>(linear_accel_z);
