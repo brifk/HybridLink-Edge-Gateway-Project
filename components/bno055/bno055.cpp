@@ -106,10 +106,14 @@ void Bno055Driver::i2c_master_init(i2c_master_bus_handle_t* bus_handle, i2c_mast
 
 void Bno055Driver::bno055_euler_queue_push(bno055_euler_double_t euler)
 {
-    xQueueSend(bno055_euler_queue, &euler, portMAX_DELAY);
+    if(xQueueSend(bno055_euler_queue, &euler, pdMS_TO_TICKS(10)) != pdPASS) {
+        ESP_LOGE(TAG, "Failed to push euler to queue");
+    }
 }
 
 void Bno055Driver::bno055_linear_accel_z_queue_push(double linear_accel_z)
 {
-    xQueueSend(bno055_linear_accel_z_queue, &linear_accel_z, portMAX_DELAY);
+    if(xQueueSend(bno055_linear_accel_z_queue, &linear_accel_z, pdMS_TO_TICKS(10)) != pdPASS) {
+        ESP_LOGE(TAG, "Failed to push linear_accel_z to queue");
+    }
 }

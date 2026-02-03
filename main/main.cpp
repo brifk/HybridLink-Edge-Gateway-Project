@@ -7,6 +7,8 @@
 #include "Thread.hpp"
 #include "WifiStation.hpp"
 #include "WifiTask.hpp"
+#include "WifiStation.hpp"
+#include "WifiTask.hpp"
 #include "bno055driver.hpp"
 #include "bno055task.hpp"
 #include "led.hpp"
@@ -53,6 +55,10 @@ void dump_system_status() {
 
 extern "C" void app_main()
 {
+    // HTTP OTA 首启自检（使用 OTAServer 静态方法）
+    OTAServer::printPartitionInfo();
+    ESP_LOGI(TAG, "Current firmware version: %s", OTAServer::getCurrentVersion());
+
     //  创建bno055对象以及相关任务
     auto bno055 = std::make_shared<Bno055Driver>();
     bno055->init();

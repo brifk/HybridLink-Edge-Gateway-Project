@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Thread.hpp"
 #include "WifiStation.hpp"
 #include <string.h>

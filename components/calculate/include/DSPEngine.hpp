@@ -30,7 +30,7 @@ private:
 
     std::shared_ptr<Bno055Driver> bno055;
     
-    alignas(16) float input_buffers_[2][N]; 
+    alignas(16) std::array<std::array<float, N>, 2> input_buffers_{};  
     int write_buffer_idx_ = 0;  // 当前正在写入哪个 buffer (0 或 1)
     int write_sample_idx_ = 0;  // 当前写到了第几个点
     alignas(16) float wind_[N_SAMPLES];         // 窗函数系数

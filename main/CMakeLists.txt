@@ -4,7 +4,10 @@ set(CURRENT_REQUIRES "bno055"
                      "Core"
                      "network"
                      "calculate"
-                    #  "OTAServer"
+                     "OTAServer"
+                     "esp_ringbuf"
+                     "esp_driver_uart"
+                     "app_update"
                     )
 
 idf_component_register(SRCS ${CURRENT_SRCS}

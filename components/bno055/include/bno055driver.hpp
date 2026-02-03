@@ -21,6 +21,8 @@ public:
         bno055.dev_addr = BNO055_I2C_ADDR1;
         bno055.delay_msec = delay_func;
         bno055_mutex = xSemaphoreCreateMutex();
+        bno055_euler_queue = xQueueCreate(256, sizeof(bno055_euler_double_t));
+        bno055_linear_accel_z_queue = xQueueCreate(256, sizeof(double));
     };
 
     ~Bno055Driver() { };
@@ -52,8 +54,8 @@ private:
     struct bno055_t bno055;
     double linear_accel_z;
     struct bno055_euler_double_t euler;
-    QueueHandle_t bno055_euler_queue = xQueueCreate(256, sizeof(bno055_euler_double_t));
-    QueueHandle_t bno055_linear_accel_z_queue = xQueueCreate(256, sizeof(double));
+    QueueHandle_t bno055_euler_queue;
+    QueueHandle_t bno055_linear_accel_z_queue;
     static SemaphoreHandle_t bno055_mutex;
     static s8 bno055read(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 wr_len);
     static s8 bno055write(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 wr_len);
