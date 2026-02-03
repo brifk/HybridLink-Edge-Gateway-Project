@@ -51,9 +51,11 @@ double Bno055Driver::read_linear_accel_z()
 
 s8 Bno055Driver::bno055read(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 wr_len)
 {
-    xSemaphoreTake(bno055_mutex, 10);
-    esp_err_t err = i2c_master_transmit_receive(i2c_master_dev_handle, &reg_addr, 1, reg_data, wr_len, I2C_MASTER_TIMEOUT_MS);
-    xSemaphoreGive(bno055_mutex);
+    esp_err_t err = ESP_FAIL;
+    if (xSemaphoreTake(bno055_mutex, 20) == pdTRUE) {
+        err = i2c_master_transmit_receive(i2c_master_dev_handle, &reg_addr, 1, reg_data, wr_len, I2C_MASTER_TIMEOUT_MS);
+        xSemaphoreGive(bno055_mutex);
+    }
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "I2C read failed at register 0x%02X: %s", reg_addr, esp_err_to_name(err));
         return BNO055_ERROR;
@@ -64,6 +66,7 @@ s8 Bno055Driver::bno055read(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 wr_len)
 s8 Bno055Driver::bno055write(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 wr_len)
 {
     // 创建一个临时缓冲区来存储寄存器地址和数据
+    esp_err_t err = ESP_FAIL;
     u8* write_buffer = (u8*)malloc(wr_len + 1);
     if (write_buffer == NULL) {
         ESP_LOGE(TAG, "Memory allocation failed");
@@ -71,9 +74,10 @@ s8 Bno055Driver::bno055write(u8 dev_addr, u8 reg_addr, u8* reg_data, u8 wr_len)
     }
     write_buffer[0] = reg_addr;
     memcpy(&write_buffer[1], reg_data, wr_len);
-    xSemaphoreTake(bno055_mutex, 10);
-    esp_err_t err = i2c_master_transmit(i2c_master_dev_handle, write_buffer, wr_len + 1, I2C_MASTER_TIMEOUT_MS);
-    xSemaphoreGive(bno055_mutex);
+    if (xSemaphoreTake(bno055_mutex, 20) == pdTRUE) {
+        err = i2c_master_transmit(i2c_master_dev_handle, write_buffer, wr_len + 1, I2C_MASTER_TIMEOUT_MS);
+        xSemaphoreGive(bno055_mutex);
+    }
     free(write_buffer);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "I2C write failed at register 0x%02X: %s", reg_addr, esp_err_to_name(err));
@@ -106,14 +110,14 @@ void Bno055Driver::i2c_master_init(i2c_master_bus_handle_t* bus_handle, i2c_mast
 
 void Bno055Driver::bno055_euler_queue_push(bno055_euler_double_t euler)
 {
-    if(xQueueSend(bno055_euler_queue, &euler, pdMS_TO_TICKS(10)) != pdPASS) {
+    if (xQueueSend(bno055_euler_queue, &euler, pdMS_TO_TICKS(10)) != pdPASS) {
         ESP_LOGE(TAG, "Failed to push euler to queue");
     }
 }
 
 void Bno055Driver::bno055_linear_accel_z_queue_push(double linear_accel_z)
 {
-    if(xQueueSend(bno055_linear_accel_z_queue, &linear_accel_z, pdMS_TO_TICKS(10)) != pdPASS) {
+    if (xQueueSend(bno055_linear_accel_z_queue, &linear_accel_z, pdMS_TO_TICKS(10)) != pdPASS) {
         ESP_LOGE(TAG, "Failed to push linear_accel_z to queue");
     }
 }

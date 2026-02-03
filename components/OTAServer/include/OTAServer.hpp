@@ -8,6 +8,7 @@
 #include "esp_https_ota.h"
 #include "esp_ota_ops.h"
 #include "esp_crt_bundle.h"
+#include "APPConfig.h"
 #include <string>
 #include <functional>
 
@@ -31,7 +32,7 @@ using OTAStatusCallback = std::function<void(OTAStatus status, int progress, con
 class OTAServer : public Thread {
 public:
     OTAServer()
-        : Thread("OTAServer", 1024 * 10, tskIDLE_PRIORITY + 5, 0)
+        : Thread("OTAServer", 1024 * 10, PRIO_OTA, 0)
         , statusCallback(nullptr)
         , autoReboot(true) { }
     

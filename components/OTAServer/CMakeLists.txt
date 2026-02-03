@@ -7,4 +7,4 @@ idf_component_register(SRCS "OTAServer.cpp"
                                 nvs_flash 
                                 esp_wifi 
                                 Core
-                       INCLUDE_DIRS "include")
+                       INCLUDE_DIRS "include" "../../main")

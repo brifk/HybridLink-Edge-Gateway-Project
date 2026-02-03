@@ -72,12 +72,14 @@ extern "C" void app_main()
 
     // 创建DSP引擎对象以及相关任务
     auto dsp_engine = std::make_shared<DSPEngine>(bno055);
+
+    auto ota_server = std::make_shared<OTAServer>();
     // 创建MQTT对象和相关任务
     auto mqtt_client = std::make_shared<MQTTClient>();
     auto mqtt_task = std::make_shared<MQTTTask>(mqtt_client, bno055);
     auto mqtt_notify_start_task = std::make_shared<MQTTNotifyStartTask>(mqtt_client);
     auto mqtt_notify_stop_task = std::make_shared<MQTTNotifyStopTask>(mqtt_client);
-    auto mqtt_subscribe_task = std::make_shared<MQTTSubscribeTask>(mqtt_client, bno055, led_list);
+    auto mqtt_subscribe_task = std::make_shared<MQTTSubscribeTask>(mqtt_client, bno055, led_list, ota_server);
     // 创建Wifi对象以及相关任务
     auto wifi_station = std::make_unique<WifiStation>(mqtt_task, mqtt_notify_start_task, mqtt_notify_stop_task);
     auto wifi_task = std::make_unique<WifiTask>(std::move(wifi_station));

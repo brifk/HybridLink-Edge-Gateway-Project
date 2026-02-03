@@ -143,11 +143,12 @@ private:
 
 class MQTTSubscribeTask : public Thread {
 public:
-    MQTTSubscribeTask(std::shared_ptr<MQTTClient> mqtt_client, std::shared_ptr<Bno055Driver> bno055, std::vector<std::shared_ptr<LED>> led_list)
+    MQTTSubscribeTask(std::shared_ptr<MQTTClient> mqtt_client, std::shared_ptr<Bno055Driver> bno055, std::vector<std::shared_ptr<LED>> led_list, std::shared_ptr<OTAServer> ota_server)
         : Thread("MQTTSubscribeTask", 1024 * 5, PRIO_MQTT, 0)
         , mqtt_client(std::move(mqtt_client))
         , bno055(std::move(bno055))
-        , led_list(std::move(led_list)) { };
+        , led_list(std::move(led_list))
+        , ota_server(std::move(ota_server)) { };
 
     void run() override {
         std::string* rx_msg_ptr = nullptr;
@@ -180,6 +181,7 @@ private:
     std::shared_ptr<MQTTClient> mqtt_client;
     std::shared_ptr<Bno055Driver> bno055;
     std::vector<std::shared_ptr<LED>> led_list;
+    std::shared_ptr<OTAServer> ota_server;
 
     // 内部解析逻辑抽离
     void process_json_cmd(cJSON* root) {
@@ -259,7 +261,9 @@ private:
         cJSON* url_item = cJSON_GetObjectItemCaseSensitive(root, "url");
         if (!cJSON_IsString(url_item) || (url_item->valuestring == nullptr)) return;
 
-        const char* url = url_item->valuestring;
-        ESP_LOGI(TAG, "OTA URL: %s", url);
+        std::string url(url_item->valuestring);
+        ESP_LOGI(TAG, "OTA URL: %s", url.c_str());
+        ota_server->setURL(url);
+        ota_server->start();
     }
 };

@@ -44,7 +44,7 @@ void DSPEngine::run()
         ESP_LOGE(TAG, "FFT Init Failed: %d", ret);
         return;
     }
-    dsps_wind_hann_f32(wind_.data(), N); // 生成窗函数
+    dsps_wind_hann_f32(wind_, N); // 生成窗函数
     fft_initialized_ = true;
     double linear_accel_z = 0;
 
@@ -73,7 +73,7 @@ void DSPEngine::run()
                 }
 
                 // D. 执行 FFT 计算
-                processAndShow(y_cf_.data(), N);
+                processAndShow(y_cf_, N);
             }
         }
     }
