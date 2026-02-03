@@ -7,7 +7,8 @@ set(COMPONENT_REQUIRES "Core"
                        json
                        "bno055"
                        "led"
-                       calculate)
+                       calculate
+                       OTAServer)
 
 idf_component_register(SRCS "WifiStation.cpp" "MQTTClient.cpp"
                     INCLUDE_DIRS "include" "../../main"

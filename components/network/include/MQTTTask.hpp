@@ -2,6 +2,7 @@
 #include "MQTTClient.hpp"
 #include "Thread.hpp"
 #include "bno055driver.hpp"
+#include "OTAServer.hpp"
 #include <cJSON.h>
 #include <memory>
 #include <unordered_map>
@@ -189,6 +190,7 @@ private:
 
         if (strcmp(cmd, "ota") == 0) {
             ESP_LOGI(TAG, "OTA command received");
+            handle_ota_command(root);
         } 
         else if (strcmp(cmd, "led") == 0) {
             handle_led_command(root);
@@ -251,5 +253,13 @@ private:
         else if (strcmp(state_item->valuestring, "STOPPED_LINEAR_ACCEL_Z") == 0) 
             bno055->bno055_linear_accel_z_state = bno_linear_accel_z_st::STOPPED_LINEAR_ACCEL_Z;
         ESP_LOGI(TAG, "bno055 state set to %s", state_item->valuestring);
+    }
+
+    void handle_ota_command(cJSON* root) {
+        cJSON* url_item = cJSON_GetObjectItemCaseSensitive(root, "url");
+        if (!cJSON_IsString(url_item) || (url_item->valuestring == nullptr)) return;
+
+        const char* url = url_item->valuestring;
+        ESP_LOGI(TAG, "OTA URL: %s", url);
     }
 };
