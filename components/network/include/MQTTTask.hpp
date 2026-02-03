@@ -3,6 +3,8 @@
 #include "Thread.hpp"
 #include "bno055driver.hpp"
 #include "OTAServer.hpp"
+#include "esp_heap_caps.h"
+#include "esp_timer.h"
 #include <cJSON.h>
 #include <memory>
 #include <unordered_map>
@@ -191,7 +193,6 @@ private:
         const char* cmd = cmd_item->valuestring;
 
         if (strcmp(cmd, "ota") == 0) {
-            ESP_LOGI(TAG, "OTA command received");
             handle_ota_command(root);
         } 
         else if (strcmp(cmd, "led") == 0) {
@@ -200,6 +201,9 @@ private:
         else if (strcmp(cmd, "bno055") == 0) {
             handle_bno055_command(root);
         } 
+        else if (strcmp(cmd, "system_state") == 0) {
+            handle_system_state_command(root);
+        }
         else {
             ESP_LOGE(TAG, "Unknown command: %s", cmd);
         }
@@ -265,5 +269,55 @@ private:
         ESP_LOGI(TAG, "OTA URL: %s", url.c_str());
         ota_server->setURL(url);
         ota_server->start();
+    }
+
+    void handle_system_state_command(cJSON* root) {
+        // 获取内存状态
+        uint32_t free_internal = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+        uint32_t min_internal  = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL);
+        uint32_t free_psram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+        uint32_t total_heap = heap_caps_get_total_size(MALLOC_CAP_INTERNAL);
+        uint32_t total_psram = heap_caps_get_total_size(MALLOC_CAP_SPIRAM);
+
+        // 构建系统状态JSON响应
+        cJSON *response = cJSON_CreateObject();
+        cJSON_AddStringToObject(response, "cmd", "system_state_response");
+        
+        // 添加内存状态
+        cJSON *memory_info = cJSON_CreateObject();
+        cJSON_AddNumberToObject(memory_info, "free_internal", free_internal);
+        cJSON_AddNumberToObject(memory_info, "min_internal", min_internal);
+        cJSON_AddNumberToObject(memory_info, "total_heap", total_heap);
+        cJSON_AddNumberToObject(memory_info, "free_psram", free_psram);
+        cJSON_AddNumberToObject(memory_info, "total_psram", total_psram);
+        cJSON_AddItemToObject(response, "memory", memory_info);
+
+        // 添加任务状态
+        cJSON *tasks_info = cJSON_CreateObject();
+        cJSON_AddNumberToObject(tasks_info, "total_tasks", uxTaskGetNumberOfTasks());
+        cJSON_AddNumberToObject(tasks_info, "current_task_stack_high_water", uxTaskGetStackHighWaterMark(NULL));
+        
+        // 获取CPU使用率统计信息（如果启用）
+#if configGENERATE_RUN_TIME_STATS
+        char *cpu_stats_buffer = (char *)malloc(2048);
+        if (cpu_stats_buffer) {
+            vTaskGetRunTimeStats(cpu_stats_buffer);
+            cJSON_AddStringToObject(tasks_info, "cpu_usage_details", cpu_stats_buffer);
+            free(cpu_stats_buffer);
+        }
+#endif
+        cJSON_AddItemToObject(response, "tasks", tasks_info);
+
+        // 添加时间戳
+        cJSON_AddNumberToObject(response, "timestamp", esp_timer_get_time()/1000); // 毫秒时间戳
+
+        // 发布系统状态信息（紧凑的JSON，减少MQTT消息大小）
+        char *json_string = cJSON_PrintUnformatted(response);
+        if (json_string) {
+            mqtt_client->publish("esp32/system_state_response", json_string);
+            cJSON_free(json_string);
+        }
+        
+        cJSON_Delete(response);
     }
 };
