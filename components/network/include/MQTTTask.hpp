@@ -63,7 +63,7 @@ public:
             } else {
                 vTaskDelay(pdMS_TO_TICKS(100));
             }
-            vTaskDelay(pdMS_TO_TICKS(10));
+            // vTaskDelay(pdMS_TO_TICKS(10)); // Removed to allow maximum throughput
         }
     };
 

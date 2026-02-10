@@ -2,7 +2,8 @@
 
 #define SSID "R9000P"
 // #define SSID "orangepi"
-#define PASSWORD "12345678"
+// #define SSID "NETGEAR65"
+#define PASSWORD "abcd1234"
 
 #define MQTT_BROKER_URL "mqtt://10.0.0.6:1883"
 
